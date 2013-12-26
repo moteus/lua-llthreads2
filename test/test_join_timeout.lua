@@ -14,7 +14,7 @@ local thread = llthreads.new(include .. [[
 thread:start()
 local ok, err = thread:join(0)
 print("thread:join(0): ", ok, err)
-assert(ok == false)
+assert(ok == nil)
 assert(err == "timeout")
 
 print("thread:join(): ", thread:join())

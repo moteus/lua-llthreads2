@@ -49,6 +49,7 @@ script:
   - lua$LUA_SFX test_llthreads.lua
   - lua$LUA_SFX test_register_llthreads.lua
   - lua$LUA_SFX test_join_timeout.lua
+  - lua$LUA_SFX test_join_detach.lua
 
 notifications:
   email:

@@ -16,6 +16,7 @@ This is full dropin replacement for [llthreads](https://github.com/Neopallium/lu
 * thread:join() method support zero timeout to check if thread alive
 * thread:join() method support arbitrary timeout on Windows platform
 * set_logger function allow logging errors (crash Lua VM) in current llthread's threads
+* thread:start() has additional parameter which control in which thread child Lua VM will be destroyed
 
 ##Usage
 
@@ -31,6 +32,46 @@ local LOG = require"log".new(
 llthread.set_logger(function(msg) LOG.error(msg) end)
 -- This error with traceback will be passed to logger
 error("SOME ERROR")
+```
+
+### Start atached thread collectd in child thread
+``` Lua 
+-- This is main thread.
+local thread = require "llthreads".new[[
+  require "utils".sleep(5)
+]]
+
+-- We tell that we start atached thread
+-- but child Lua State shuld be close 
+-- in child thread. 
+-- So thread:join() can not return any values.
+-- If `thread` became garbage in main thread then
+-- finallizer calls thread:join() and main thread
+-- may hungup.
+thread:start(false, false)
+
+-- we can call join
+thread:join()
+```
+
+### Start detached thread collectd on which we can call join
+``` Lua 
+-- This is main thread.
+local thread = require "llthreads".new[[
+  require "utils".sleep(5)
+]]
+
+-- We tell that we start detached thread
+-- but with ability call thread:join()
+-- and gets lua return values from child thread.
+-- In fact we start atached thread but if `thread` 
+-- became garbage in main thread then finallizer 
+-- just detach child thread and main thread
+-- may not hungup.
+thread:start(true, true)
+
+-- we can call join
+thread:join()
 ```
 
 [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/moteus/lua-llthreads2/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
