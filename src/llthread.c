@@ -62,6 +62,10 @@ typedef pthread_t os_thread_t;
 
 LLTHREADS_EXPORT_API int luaopen_llthreads(lua_State *L);
 
+#define LLTHREAD_T_NAME "LLThread"
+static const char *LLTHREAD_T = LLTHREAD_T_NAME;
+static const char *LLTHREAD_LOGGER_HOLDER = LLTHREAD_T_NAME " logger holder";
+
 //{ traceback
 
 #define ERROR_LEN 1024
@@ -308,6 +312,26 @@ typedef struct llthread_t {
   flags_t           flags;
 } llthread_t;
 
+//{ logger interface
+void llthread_log(lua_State *L, const char *hdr, const char *msg){
+  int top = lua_gettop(L);
+  lua_rawgetp(L, LUA_REGISTRYINDEX, LLTHREAD_LOGGER_HOLDER);
+  if(lua_isnil(L, -1)){
+    lua_pop(L, 1);
+    fputs(hdr,  stderr);
+    fputs(msg,  stderr);
+    fputc('\n', stderr);
+    fflush(stderr);
+    return;
+  }
+  lua_pushstring(L, hdr);
+  lua_pushstring(L, msg);
+  lua_concat(L, 2);
+  lua_pcall(L, 1, 0, 0);
+  lua_settop(L, top);
+}
+//}
+
 //{ llthread_child
 
 static void open_thread_libs(lua_State *L){
@@ -369,9 +393,7 @@ static OS_THREAD_RETURT llthread_child_thread_run(void *arg) {
 
   /* alwasy print errors here, helps with debugging bad code. */
   if(this->status != 0) {
-    const char *err_msg = lua_tostring(L, -1);
-    fprintf(stderr, "Error from thread: %s\n", err_msg);
-    fflush(stderr);
+    llthread_log(L, "Error from thread: ", lua_tostring(L, -1));
   }
 
   /* if thread is detached, then destroy the child state. */
@@ -543,9 +565,6 @@ static llthread_t *llthread_create(lua_State *L, const char *code, size_t code_l
 
 //{ Lua interface to llthread
 
-#define LLTHREAD_T_NAME "LLThread"
-static const char *LLTHREAD_T = LLTHREAD_T_NAME;
-
 static llthread_t *l_llthread_at (lua_State *L, int i) {
   llthread_t **this = (llthread_t **)lutil_checkudatap (L, i, LLTHREAD_T);
   luaL_argcheck (L,  this != NULL, i, "thread expected");
@@ -571,9 +590,7 @@ static int l_llthread_delete(lua_State *L) {
     llthread_child_t *child = this->child;
     llthread_join(this, INFINITE_JOIN_TIMEOUT);
     if(child && child->status != 0) {
-      const char *err_msg = lua_tostring(child->L, -1);
-      fprintf(stderr, "Error from non-joined thread: %s\n", err_msg);
-      fflush(stderr);
+      llthread_log(child->L, "Error from non-joined thread: ", lua_tostring(child->L, -1));
     }
   }
 
@@ -678,8 +695,16 @@ static const struct luaL_Reg l_llthread_meth[] = {
 
 //}
 
+static int l_llthread_set_logger(lua_State *L){
+  lua_settop(L, 1);
+  luaL_argcheck(L, lua_isfunction(L, 1), 1, "function expected");
+  lua_rawsetp(L, LUA_REGISTRYINDEX, LLTHREAD_LOGGER_HOLDER);
+  return 0;
+}
+
 static const struct luaL_Reg l_llthreads_lib[] = {
   {"new",           l_llthread_new           },
+  {"set_logger",    l_llthread_set_logger    },
 
   {NULL, NULL}
 };
