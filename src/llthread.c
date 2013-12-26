@@ -2,6 +2,11 @@
 #  define USE_PTHREAD
 #endif
 
+#include <stdlib.h>
+#include <memory.h>
+#include <assert.h>
+#include <errno.h>
+
 #ifndef USE_PTHREAD
 #  include <windows.h>
 #  include <stdio.h>
