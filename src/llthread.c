@@ -398,7 +398,9 @@ static llthread_t *llthread_new() {
   if(!this) return NULL;
 
   this->flags  = TSTATE_NONE;
+#ifndef USE_PTHREAD
   this->thread = INVALID_THREAD;
+#endif
   this->child  = llthread_child_new();
   if(!this->child){
     FREE_STRUCT(this);
@@ -443,14 +445,14 @@ static int llthread_start(llthread_t *this, int start_detached) {
 
 #ifndef USE_PTHREAD
   this->thread = (HANDLE)_beginthreadex(NULL, 0, llthread_child_thread_run, child, 0, NULL);
+  if(INVALID_THREAD == this->thread){
+    rc = -1
+  }
 #else
   rc = pthread_create(&(this->thread), NULL, llthread_child_thread_run, child);
-  if(rc == 0){
-    this->thread = INVALID_THREAD
-  }
 #endif
 
-  if(this->thread != INVALID_THREAD) {
+  if(rc == 0) {
     FLAG_SET(this, TSTATE_STARTED);
     if(start_detached) {
       FLAG_SET(this, TSTATE_DETACHED);
