@@ -357,8 +357,24 @@ static void open_thread_libs(lua_State *L){
   L_REGLIB(L, os,        1);
   L_REGLIB(L, math,      1);
   L_REGLIB(L, table,     1);
-  L_REGLIB(L, debug,     1);
   L_REGLIB(L, string,    1);
+
+#ifdef LUA_DBLIBNAME
+  L_REGLIB(L, debug,     1);
+#endif
+
+#ifdef LUA_BITLIBNAME
+  L_REGLIB(L, bit,        1);
+#endif
+
+#ifdef LUA_JITLIBNAME
+  L_REGLIB(L, jit,        1);
+#endif
+
+#ifdef LUA_FFILIBNAME
+  L_REGLIB(L, ffi,        1);
+#endif
+
 
   lua_settop(L, top);
 #undef L_REGLIB
