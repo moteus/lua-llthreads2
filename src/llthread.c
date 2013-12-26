@@ -43,12 +43,16 @@
 #  define OS_THREAD_RETURT      unsigned int __stdcall
 #  define INVALID_THREAD        INVALID_HANDLE_VALUE
 #  define INFINITE_JOIN_TIMEOUT INFINITE
+#  define JOIN_OK               0
+#  define JOIN_ETIMEDOUT        1
 typedef DWORD  join_timeout_t;
 typedef HANDLE os_thread_t;
 #else
 #  define OS_THREAD_RETURT      void *
 #  define INVALID_THREAD        0
 #  define INFINITE_JOIN_TIMEOUT -1
+#  define JOIN_OK               0
+#  define JOIN_ETIMEDOUT        ETIMEDOUT
 typedef int       join_timeout_t;
 typedef pthread_t os_thread_t;
 #endif
@@ -321,13 +325,15 @@ static void open_thread_libs(lua_State *L){
   /* get package.preload */
   lua_getglobal(L, "package"); lua_getfield(L, -1, "preload"); lua_remove(L, -2);
 
+  /*always only register*/
+  lua_pushcfunction(L, luaopen_llthreads); lua_setfield(L, -2, "llthreads");
+
   L_REGLIB(L, io,        1);
   L_REGLIB(L, os,        1);
   L_REGLIB(L, math,      1);
   L_REGLIB(L, table,     1);
   L_REGLIB(L, debug,     1);
   L_REGLIB(L, string,    1);
-  L_REGLIB(L, llthreads, 0);
 
   lua_settop(L, top);
 #undef L_REGLIB
@@ -482,9 +488,24 @@ static int llthread_join(llthread_t *this, join_timeout_t timeout) {
   }
   return 2;
 #else
+  int rc;
+  if(timeout == 0){
+    rc = pthread_kill(this->thread, 0);
+    if(rc == 0){ /* still alive */
+      rc = ETIMEDOUT;
+    }
+    if(rc == ESRCH){ /*thread dead*/
+      FLAG_SET(this, TSTATE_JOINED);
+      rc = 0;
+    }
+    return rc;
+  }
+
+  // @todo use pthread_tryjoin_np to support timeout
+
   /* then join the thread. */
-  int rc = pthread_join(this->thread, NULL);
-  if(rc == 0) {
+  rc = pthread_join(this->thread, NULL);
+  if((rc == 0) || (rc == ESRCH)) {
     FLAG_SET(this, TSTATE_JOINED);
   }
   return rc;
@@ -598,7 +619,7 @@ static int l_llthread_join(lua_State *L) {
   }
 
   /* join the thread. */
-  rc = llthread_join(this, INFINITE_JOIN_TIMEOUT);
+  rc = llthread_join(this, luaL_optint(L, 2, INFINITE_JOIN_TIMEOUT));
 
   /* Push all results after the Lua code. */
   if(child && FLAG_IS_SET(this, TSTATE_JOINED)) {
@@ -618,13 +639,11 @@ static int l_llthread_join(lua_State *L) {
     return top;
   }
 
-#ifndef USE_PTHREAD
-  if( rc == 1 ){
+  if( rc == JOIN_ETIMEDOUT ){
     lua_pushboolean(L, 0);
     lua_pushstring(L, "timeout");
     return 2;
   } 
-#endif
 
   {
     char buf[ERROR_LEN];

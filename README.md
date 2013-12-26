@@ -12,6 +12,9 @@ This is full dropin replacement for [llthreads](https://github.com/Neopallium/lu
 * does not open all standart libraries (set LLTHREAD_REGISTER_STD_LIBRARY to on this feature)
 * register loaders for llthreads library itself
 
+##Additional
+* thread:join() method support zero timeout to check if thread alive
+* thread:join() method support arbitrary timeout on Windows platform
 
 [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/moteus/lua-llthreads2/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
 
