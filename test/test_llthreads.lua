@@ -19,29 +19,7 @@
 -- THE SOFTWARE.
 
 local llthreads = require"llthreads"
-
-local sleep
-local status, socket = pcall(require,"socket")
-if status then
-	sleep = function(secs)
-		return socket.sleep(secs)
-	end
-end
-
-if not sleep then
-	local status, ztimer = pcall(require, "lzmq.timer")
-	if status then
-		sleep = function(secs)
-			ztimer.sleep(secs * 1000)
-		end
-	end
-end
-
-if not sleep then
-	sleep = function(secs)
-		os.execute("sleep " .. tonumber(secs))
-	end
-end
+local sleep     = require"utils".sleep
 
 local function detached_thread(...)
 	local thread = llthreads.new([[ print("print_detached_thread:", ...) ]], ...)

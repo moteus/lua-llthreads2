@@ -1,53 +1,11 @@
 local llthreads = require"llthreads"
-
-local sleep
-local status, socket = pcall(require,"socket")
-if status then
-  sleep = function(secs)
-    return socket.sleep(secs)
-  end
-end
-
-if not sleep then
-  local status, ztimer = pcall(require, "lzmq.timer")
-  if status then
-    sleep = function(secs)
-      ztimer.sleep(secs * 1000)
-    end
-  end
-end
-
-if not sleep then
-  sleep = function(secs)
-    os.execute("sleep " .. tonumber(secs))
-  end
-end
+local utils     = require "utils"
+local sleep     = utils.sleep
 
 local include = [[
 local llthreads = require"llthreads"
-
-local sleep
-local status, socket = pcall(require,"socket")
-if status then
-  sleep = function(secs)
-    return socket.sleep(secs)
-  end
-end
-
-if not sleep then
-  local status, ztimer = pcall(require, "lzmq.timer")
-  if status then
-    sleep = function(secs)
-      ztimer.sleep(secs * 1000)
-    end
-  end
-end
-
-if not sleep then
-  sleep = function(secs)
-    os.execute("sleep " .. tonumber(secs))
-  end
-end
+]] .. utils.thread_init .. [[ 
+local sleep = require "utils".sleep
 ]]
 
 local thread = llthreads.new(include .. [[

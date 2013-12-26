@@ -17,9 +17,6 @@ This is full dropin replacement for [llthreads](https://github.com/Neopallium/lu
 * thread:join() method support arbitrary timeout on Windows platform
 * set_logger function allow logging errors (crash Lua VM) in current llthread's threads
 
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/moteus/lua-llthreads2/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
-
-
 ##Usage
 
 ### Use custom logger
@@ -32,9 +29,9 @@ local LOG = require"log".new(
   require "log.writer.net.zmq".new("tcp://127.0.0.1:5555")
 )
 llthread.set_logger(function(msg) LOG.error(msg) end)
-
-...
-
 -- This error with traceback will be passed to logger
 error("SOME ERROR")
 ```
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/moteus/lua-llthreads2/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+

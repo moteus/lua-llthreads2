@@ -23,19 +23,12 @@
 -- luajit sub_threads.lua
 
 local llthreads = require"llthreads"
+local utils     = require "utils"
 
 local num_threads = tonumber(arg[1] or 1000)
  
 -- level 0 string literal enclosure [[  ]] of child execution code
-local thread_code = [[  
-    local lua_init = os.getenv("lua_init")
-    if lua_init and #lua_init > 0 then
-        if lua_init:sub(1,1) == '@' then
-            dofile(lua_init:sub(2))
-        else
-            assert((loadstring or load)(lua_init))()
-        end
-    end
+local thread_code = utils.thread_init .. [[
 
     local num_threads = ...
     print("CHILD: received from ROOT params:", ...)    
