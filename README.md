@@ -1,5 +1,6 @@
 lua-llthreads2
 ==============
+[![Build Status](https://travis-ci.org/moteus/lua-llthreads2.png?branch=master)](https://travis-ci.org/moteus/lua-llthreads2)
 
 This is full dropin replacement for [llthreads](https://github.com/Neopallium/lua-llthreads) library.
 
