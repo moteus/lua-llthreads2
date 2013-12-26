@@ -43,6 +43,11 @@ void lua_rawsetp (lua_State *L, int index, const void *p){
   lua_rawset(L, index);
 }
 
+void lutil_require(lua_State *L, const char* name, lua_CFunction fn, int glb) {
+  // @fixme generate error if we can not load module
+  lua_cpcall(L, fn, NULL);
+}
+
 #endif
 
 int lutil_newmetatablep (lua_State *L, const void *p) {

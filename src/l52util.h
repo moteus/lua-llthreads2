@@ -18,6 +18,9 @@ int   luaL_typerror (lua_State *L, int narg, const char *tname);
 
 void luaL_register (lua_State *L, const char *libname, const luaL_Reg *l);
 
+
+#define lutil_require luaL_requiref
+
 #else                      // lua 5.1
 
 // functions form lua 5.2
@@ -28,6 +31,8 @@ void luaL_register (lua_State *L, const char *libname, const luaL_Reg *l);
 void  lua_rawgetp   (lua_State *L, int index, const void *p);
 void  lua_rawsetp   (lua_State *L, int index, const void *p);
 void  luaL_setfuncs  (lua_State *L, const luaL_Reg *l, int nup);
+
+void lutil_require(lua_State *L, const char* name, lua_CFunction fn, int glb);
 
 #endif
 

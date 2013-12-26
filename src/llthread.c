@@ -308,26 +308,26 @@ typedef struct llthread_t {
 
 static void open_thread_libs(lua_State *L){
 #ifdef LLTHREAD_REGISTER_STD_LIBRARY
-#  define L_REGLIB(L, name) lua_pushcfunction(L, luaopen_##name); lua_setfield(L, -2, #name)
+#  define L_REGLIB(L, name, G) lua_pushcfunction(L, luaopen_##name); lua_setfield(L, -2, #name)
 #else
-#  define L_REGLIB(L, name) lua_cpcall(L, luaopen_##name, 0)
+#  define L_REGLIB(L, name, G) lutil_require(L, #name, luaopen_##name, G)
 #endif
 
   int top = lua_gettop(L);
-  lua_cpcall(L, luaopen_base,    0);
-  lua_cpcall(L, luaopen_package, 0);
+  lutil_require(L, "_G",      luaopen_base,    1);
+  lutil_require(L, "package", luaopen_package, 1);
   lua_settop(L, top);
 
   /* get package.preload */
   lua_getglobal(L, "package"); lua_getfield(L, -1, "preload"); lua_remove(L, -2);
 
-  L_REGLIB(L, io        );
-  L_REGLIB(L, os        );
-  L_REGLIB(L, math      );
-  L_REGLIB(L, table     );
-  L_REGLIB(L, debug     );
-  L_REGLIB(L, string    );
-  L_REGLIB(L, llthreads );
+  L_REGLIB(L, io,        1);
+  L_REGLIB(L, os,        1);
+  L_REGLIB(L, math,      1);
+  L_REGLIB(L, table,     1);
+  L_REGLIB(L, debug,     1);
+  L_REGLIB(L, string,    1);
+  L_REGLIB(L, llthreads, 0);
 
   lua_settop(L, top);
 #undef L_REGLIB
@@ -446,7 +446,7 @@ static int llthread_start(llthread_t *this, int start_detached) {
 #ifndef USE_PTHREAD
   this->thread = (HANDLE)_beginthreadex(NULL, 0, llthread_child_thread_run, child, 0, NULL);
   if(INVALID_THREAD == this->thread){
-    rc = -1
+    rc = -1;
   }
 #else
   rc = pthread_create(&(this->thread), NULL, llthread_child_thread_run, child);
