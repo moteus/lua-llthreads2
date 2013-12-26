@@ -1,0 +1,13 @@
+*.d
+*.spec
+*.obj
+*.dll
+*.o
+*.lib
+*.exp
+*.suo
+*.ncb
+*.user
+*.pdb
+msvc/Debug/
+msvc/Release/
