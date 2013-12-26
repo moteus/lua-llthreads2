@@ -337,13 +337,16 @@ void llthread_log(lua_State *L, const char *hdr, const char *msg){
 //{ llthread_child
 
 static void open_thread_libs(lua_State *L){
+  int top = lua_gettop(L);
+
+  /* luaL_openlibs(L); lua_settop(L, top); return; */
+
 #ifdef LLTHREAD_REGISTER_STD_LIBRARY
 #  define L_REGLIB(L, name, G) lua_pushcfunction(L, luaopen_##name); lua_setfield(L, -2, #name)
 #else
 #  define L_REGLIB(L, name, G) lutil_require(L, #name, luaopen_##name, G)
 #endif
 
-  int top = lua_gettop(L);
   lutil_require(L, "_G",      luaopen_base,    1);
   lutil_require(L, "package", luaopen_package, 1);
   lua_settop(L, top);
@@ -364,18 +367,13 @@ static void open_thread_libs(lua_State *L){
   L_REGLIB(L, debug,     1);
 #endif
 
-#ifdef LUA_BITLIBNAME
-  L_REGLIB(L, bit,        1);
-#endif
-
 #ifdef LUA_JITLIBNAME
+  L_REGLIB(L, bit,        1);
   L_REGLIB(L, jit,        1);
-#endif
-
-#ifdef LUA_FFILIBNAME
   L_REGLIB(L, ffi,        1);
+#elif defined LUA_BITLIBNAME
+  L_REGLIB(L, bit32,      1);
 #endif
-
 
   lua_settop(L, top);
 #undef L_REGLIB
