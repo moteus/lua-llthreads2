@@ -45,6 +45,7 @@
 #  define INFINITE_JOIN_TIMEOUT INFINITE
 #  define JOIN_OK               0
 #  define JOIN_ETIMEDOUT        1
+#  define JOIN_FAIL             2
 typedef DWORD  join_timeout_t;
 typedef HANDLE os_thread_t;
 #else
@@ -540,22 +541,22 @@ static int llthread_join(llthread_t *this, join_timeout_t timeout) {
     CloseHandle( this->thread );
     this->thread = INVALID_THREAD;
     FLAG_SET(this, TSTATE_JOINED);
-    return 0;
+    return JOIN_OK;
   }
   else if( ret == WAIT_TIMEOUT ){
-    return 1;
+    return JOIN_ETIMEDOUT;
   }
-  return 2;
+  return JOIN_FAIL;
 #else
   int rc;
   if(timeout == 0){
     rc = pthread_kill(this->thread, 0);
     if(rc == 0){ /* still alive */
-      rc = ETIMEDOUT;
+      rc = JOIN_ETIMEDOUT;
     }
     if(rc == ESRCH){ /*thread dead*/
       FLAG_SET(this, TSTATE_JOINED);
-      rc = 0;
+      rc = JOIN_OK;
     }
     return rc;
   }
@@ -566,6 +567,7 @@ static int llthread_join(llthread_t *this, join_timeout_t timeout) {
   rc = pthread_join(this->thread, NULL);
   if((rc == 0) || (rc == ESRCH)) {
     FLAG_SET(this, TSTATE_JOINED);
+    rc = JOIN_OK;
   }
   return rc;
 #endif
