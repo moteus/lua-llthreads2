@@ -41,32 +41,26 @@ local thread = require "llthreads".new[[
   require "utils".sleep(5)
 ]]
 
--- We tell that we start atached thread
--- but child Lua State shuld be close 
--- in child thread. 
--- So thread:join() can not return any values.
--- If `thread` became garbage in main thread then
--- finallizer calls thread:join() and main thread
--- may hungup.
+-- We tell that we start atached thread but child Lua State shuld be close in child thread. 
+-- So thread:join() can not return any Lua values.
+-- If `thread` became garbage in main thread then finallizer calls thread:join() 
+-- and main thread may hungup.
 thread:start(false, false)
 
 -- we can call join
 thread:join()
 ```
 
-### Start detached thread collectd on which we can call join
+### Start detached thread on which we can call join
 ``` Lua 
 -- This is main thread.
 local thread = require "llthreads".new[[
   require "utils".sleep(5)
 ]]
 
--- We tell that we start detached thread
--- but with ability call thread:join()
--- and gets lua return values from child thread.
--- In fact we start atached thread but if `thread` 
--- became garbage in main thread then finallizer 
--- just detach child thread and main thread
+-- We tell that we start detached thread but with ability call thread:join() and 
+-- gets lua return values from child thread. In fact we start atached thread but if `thread` 
+-- became garbage in main thread then finallizer just detach child thread and main thread
 -- may not hungup.
 thread:start(true, true)
 
