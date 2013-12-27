@@ -13,8 +13,8 @@ This is full dropin replacement for [llthreads](https://github.com/Neopallium/lu
 * register loaders for llthreads library itself
 
 ##Additional
-* thread:join() method support zero timeout to check if thread alive
-* thread:join() method support arbitrary timeout on Windows platform
+* thread:join() method support zero timeout to check if thread alive (does not work on Windows with pthreads)
+* thread:join() method support arbitrary timeout on Windows threads
 * set_logger function allow logging errors (crash Lua VM) in current llthread's threads
 * thread:start() has additional parameter which control in which thread child Lua VM will be destroyed
 

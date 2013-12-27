@@ -439,14 +439,19 @@ static OS_THREAD_RETURN llthread_child_thread_run(void *arg) {
 //{ llthread
 
 static void llthread_validate(llthread_t *this){
+  /* describe valid state of llthread_t object 
+   * from after create and before destroy
+   */
   if(!FLAGS_IS_SET(this, TSTATE_STARTED)){
     assert(!FLAGS_IS_SET(this, TSTATE_DETACHED));
     assert(!FLAGS_IS_SET(this, TSTATE_JOINED));
+    assert(!FLAGS_IS_SET(this, FLAG_JOIN_LUA));
+    return;
   }
-  else{
-    if(FLAGS_IS_SET(this, TSTATE_DETACHED)){
-      if(FLAGS_IS_SET(this, FLAG_JOIN_LUA)) assert(this->child == NULL);
-    }
+
+  if(FLAGS_IS_SET(this, TSTATE_DETACHED)){
+    if(!FLAGS_IS_SET(this, FLAG_JOIN_LUA)) assert(this->child == NULL);
+    else assert(this->child != NULL);
   }
 }
 
@@ -520,6 +525,10 @@ static int llthread_detach(llthread_t *this){
 
   assert(FLAGS_IS_SET(this, TSTATE_STARTED));
 
+  /*we can not deatach joined thread*/
+  if(FLAGS_IS_SET(this, TSTATE_JOINED))
+    return 0;
+
   this->child = NULL;
 #ifdef USE_PTHREAD
   rc = pthread_detach(this->thread);
@@ -545,9 +554,10 @@ static int llthread_start(llthread_t *this, int start_detached, int join_lua) {
   llthread_child_t *child = this->child;
   int rc = 0;
 
-  if(join_lua){ /*child does not close lua_State*/
-    FLAG_SET(child, FLAG_JOIN_LUA);
-  }
+  llthread_validate(this);
+
+  if(join_lua) FLAG_SET(child, FLAG_JOIN_LUA);
+  if(start_detached) FLAG_SET(child, TSTATE_DETACHED);
 
 #ifndef USE_PTHREAD
   this->thread = (HANDLE)_beginthreadex(NULL, 0, llthread_child_thread_run, child, 0, NULL);
@@ -567,10 +577,14 @@ static int llthread_start(llthread_t *this, int start_detached, int join_lua) {
     }
   }
 
+  llthread_validate(this);
+
   return rc;
 }
 
 static int llthread_join(llthread_t *this, join_timeout_t timeout) {
+  llthread_validate(this);
+
   if(FLAG_IS_SET(this, TSTATE_JOINED)){
     return JOIN_OK;
   } else{
@@ -582,6 +596,9 @@ static int llthread_join(llthread_t *this, join_timeout_t timeout) {
     CloseHandle( this->thread );
     this->thread = INVALID_THREAD;
     FLAG_SET(this, TSTATE_JOINED);
+
+    llthread_validate(this);
+
     return JOIN_OK;
   }
   else if( ret == WAIT_TIMEOUT ){
@@ -612,6 +629,9 @@ static int llthread_join(llthread_t *this, join_timeout_t timeout) {
     FLAG_SET(this, TSTATE_JOINED);
     rc = JOIN_OK;
   }
+
+  llthread_validate(this);
+
   return rc;
 #endif
   }
@@ -640,6 +660,8 @@ static llthread_t *llthread_create(lua_State *L, const char *code, size_t code_l
   /* copy extra args from main state to child state. */
   /* Push all args after the Lua code. */
   llthread_push_args(L, child, 3, lua_gettop(L));
+
+  llthread_validate(this);
 
   return this;
 }
@@ -710,7 +732,7 @@ static int l_llthread_join(lua_State *L) {
   if(child && FLAG_IS_SET(this, TSTATE_JOINED)) {
     int top;
 
-    if(!FLAG_IS_SET(this, FLAG_JOIN_LUA)){
+    if(FLAG_IS_SET(this, TSTATE_DETACHED) || !FLAG_IS_SET(this, FLAG_JOIN_LUA)){
       /*child lua state has been destroyed by child thread*/
       /*@todo return thread exit code*/
       lua_pushnumber(L, 0);
