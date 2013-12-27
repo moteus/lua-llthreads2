@@ -290,7 +290,7 @@ static int fail(lua_State *L, const char *msg){
 #define TSTATE_JOINED   (flags_t)1<<2
 #define FLAG_JOIN_LUA   (flags_t)1<<3
 
-/*At leas one flag*/
+/*At least one flag*/
 #define FLAG_IS_SET(O, F) (O->flags & (flags_t)(F))
 /*All flags*/
 #define FLAGS_IS_SET(O, F) ((F) == FLAG_IS_SET(O, F))
@@ -414,8 +414,7 @@ static OS_THREAD_RETURN llthread_child_thread_run(void *arg) {
     llthread_log(L, "Error from thread: ", lua_tostring(L, -1));
   }
 
-  /* if thread is detached, then destroy the child state. */
-  if(!FLAG_IS_SET(this, FLAG_JOIN_LUA)) {
+  if(FLAG_IS_SET(this, TSTATE_DETACHED) || !FLAG_IS_SET(this, FLAG_JOIN_LUA)) {
     /* thread is detached, so it must clean-up the child state. */
     llthread_child_destroy(this);
     this = NULL;
@@ -438,6 +437,22 @@ static OS_THREAD_RETURN llthread_child_thread_run(void *arg) {
 //}
 
 //{ llthread
+
+static void llthread_validate(llthread_t *this){
+  if(!FLAGS_IS_SET(this, TSTATE_STARTED)){
+    assert(!FLAGS_IS_SET(this, TSTATE_DETACHED));
+    assert(!FLAGS_IS_SET(this, TSTATE_JOINED));
+  }
+  else{
+    if(FLAGS_IS_SET(this, TSTATE_DETACHED)){
+      if(FLAGS_IS_SET(this, FLAG_JOIN_LUA)) assert(this->child == NULL);
+    }
+  }
+}
+
+static int llthread_detach(llthread_t *this);
+
+static int llthread_join(llthread_t *this, join_timeout_t timeout);
 
 static llthread_t *llthread_new() {
   llthread_t *this = ALLOC_STRUCT(llthread_t);
@@ -464,13 +479,31 @@ static void llthread_cleanup_child(llthread_t *this) {
 }
 
 static void llthread_destroy(llthread_t *this) {
-  /* We still own the child thread object iff the thread was not started or
-   * we have joined the thread.
-   */
-  if(FLAG_IS_SET(this, TSTATE_JOINED)||(this->flags == TSTATE_NONE))  {
-    if(FLAG_IS_SET(this, FLAG_JOIN_LUA))
+  do{
+    if(!FLAG_IS_SET(this, TSTATE_STARTED)){
       llthread_cleanup_child(this);
-  }
+      break;
+    }
+    if(!FLAG_IS_SET(this, FLAG_JOIN_LUA)) break;
+    if( FLAG_IS_SET(this, TSTATE_DETACHED)){
+      llthread_detach(this);
+      break;
+    }
+
+    if(!FLAG_IS_SET(this, TSTATE_JOINED)){
+      /* @todo log warning about lost thread object for debug? */
+      llthread_child_t *child = this->child;
+      llthread_join(this, INFINITE_JOIN_TIMEOUT);
+      if(child && child->status != 0) {
+        /*@fixme remove redundant log*/
+        llthread_log(child->L, "Error from non-joined thread: ", lua_tostring(child->L, -1));
+      }
+    }
+
+    assert(FLAG_IS_SET(this, TSTATE_JOINED));
+    llthread_cleanup_child(this);
+  }while(0);
+
   FREE_STRUCT(this);
 }
 
@@ -484,23 +517,30 @@ static int llthread_push_results(lua_State *L, llthread_child_t *child, int idx,
 
 static int llthread_detach(llthread_t *this){
   int rc = 0;
+
+  assert(FLAGS_IS_SET(this, TSTATE_STARTED));
+
   this->child = NULL;
 #ifdef USE_PTHREAD
   rc = pthread_detach(this->thread);
+#else
+  assert(this->thread != INVALID_THREAD);
+  CloseHandle(this->thread);
+  this->thread = INVALID_THREAD;
 #endif
   return rc;
 }
 
-/*  | detached | join_lua  || return values |  which thread     | gc calls  | detach on |
-    |          |           || thread:join() | closes lua state  |           |           |
-*   -------------------------------------------------------------------------------------
-*   |   false  |   falas   ||   <NONE>      | child             |  <NONE>   |  <NEVER>  |
-*  *|   false  |   true    ||   Lua values  | parent            |  join     |  <NEVER>  |
-*  *|   true   |   false   ||   <ERROR>     | child             |  <NONE>   |   start   |
-*   |   true   |   true    ||   <NONE>      | parent            |  detach   |    gc     |
-*   -------------------------------------------------------------------------------------
-*   * llthread behavior.
-*/ 
+/*   | detached | join_lua  || return values |  which thread     | gc calls  | detach on |
+ *   |          |           || thread:join() | closes lua state  |           |           |
+ *   -------------------------------------------------------------------------------------
+ *   |   false  |   falas   ||   <NONE>      | child             |  <NONE>   |  <NEVER>  |
+ *  *|   false  |   true    ||   Lua values  | parent            |  join     |  <NEVER>  |
+ *  *|   true   |   false   ||   <ERROR>     | child             |  <NONE>   |   start   |
+ *   |   true   |   true    ||   <NONE>      | child             |  detach   |    gc     |
+ *   -------------------------------------------------------------------------------------
+ *   * llthread behavior.
+ */
 static int llthread_start(llthread_t *this, int start_detached, int join_lua) {
   llthread_child_t *child = this->child;
   int rc = 0;
@@ -531,9 +571,12 @@ static int llthread_start(llthread_t *this, int start_detached, int join_lua) {
 }
 
 static int llthread_join(llthread_t *this, join_timeout_t timeout) {
+  if(FLAG_IS_SET(this, TSTATE_JOINED)){
+    return JOIN_OK;
+  } else{
 #ifndef USE_PTHREAD
   DWORD ret = 0;
-  if(INVALID_THREAD == this->thread) return 0;
+  if(INVALID_THREAD == this->thread) return JOIN_OK;
   ret = WaitForSingleObject( this->thread, timeout );
   if( ret == WAIT_OBJECT_0){ /* Destroy the thread object. */
     CloseHandle( this->thread );
@@ -550,16 +593,18 @@ static int llthread_join(llthread_t *this, join_timeout_t timeout) {
   if(timeout == 0){
     rc = pthread_kill(this->thread, 0);
     if(rc == 0){ /* still alive */
-      rc = JOIN_ETIMEDOUT;
+      return JOIN_ETIMEDOUT;
     }
-    if(rc == ESRCH){ /*thread dead*/
-      FLAG_SET(this, TSTATE_JOINED);
-      rc = JOIN_OK;
+
+    if(rc != ESRCH){ 
+      /*@fixme what else it can be ?*/
+      return rc;
     }
-    return rc;
+
+    /*thread dead so we call join to free pthread_t struct */
   }
 
-  /* @todo use pthread_tryjoin_np to support timeout */
+  /* @todo use pthread_tryjoin_np/pthread_timedjoin_np to support timeout */
 
   /* then join the thread. */
   rc = pthread_join(this->thread, NULL);
@@ -569,6 +614,7 @@ static int llthread_join(llthread_t *this, join_timeout_t timeout) {
   }
   return rc;
 #endif
+  }
 }
 
 static llthread_t *llthread_create(lua_State *L, const char *code, size_t code_len) {
@@ -612,34 +658,9 @@ static llthread_t *l_llthread_at (lua_State *L, int i) {
 
 static int l_llthread_delete(lua_State *L) {
   llthread_t **pthis = (llthread_t **)lutil_checkudatap (L, 1, LLTHREAD_T);
-  llthread_t *this;
   luaL_argcheck (L, pthis != NULL, 1, "thread expected");
-  this = *pthis;
-
-  /*already exists*/
-  if(this == NULL) return 0;
-
-  do{/* join the thread. */
-    if(!FLAG_IS_SET(this, TSTATE_STARTED))  break;
-    if( FLAG_IS_SET(this, TSTATE_JOINED))   break;
-
-    if(FLAG_IS_SET(this, TSTATE_DETACHED)){
-      if(FLAG_IS_SET(this, FLAG_JOIN_LUA)){
-        llthread_detach(this);
-      }
-      break;
-    }
-
-    { /* @todo log warning about lost thread for debug? */
-      llthread_child_t *child = this->child;
-      llthread_join(this, INFINITE_JOIN_TIMEOUT);
-      if(child && child->status != 0) {
-        llthread_log(child->L, "Error from non-joined thread: ", lua_tostring(child->L, -1));
-      }
-    }
-  }while(0);
-
-  llthread_destroy(this);
+  if(*pthis == NULL) return 0;
+  llthread_destroy(*pthis);
   *pthis = NULL;
 
   return 0;
@@ -653,7 +674,7 @@ static int l_llthread_start(lua_State *L) {
   if(!lua_isnone(L, 3)) join_lua = lua_toboolean(L, 3);
   else join_lua = start_detached ? 0 : 1;
 
-  if(this->flags != TSTATE_NONE) {
+  if(FLAG_IS_SET(this, TSTATE_STARTED)) {
     return fail(L, "Thread already started.");
   }
 
@@ -714,20 +735,16 @@ static int l_llthread_join(lua_State *L) {
   }
 
   if( rc == JOIN_ETIMEDOUT ){
-    lua_pushnil(L);
-    lua_pushstring(L, "timeout");
-    return 2;
+    return fail(L, "timeout");
   } 
 
   {
     char buf[ERROR_LEN];
     strerror_r(errno, buf, ERROR_LEN);
 
-    llthread_cleanup_child(this);
+    /* llthread_cleanup_child(this); */
 
-    lua_pushboolean(L, 0);
-    lua_pushstring(L, buf);
-    return 2;
+    return fail(L, buf);
   }
 
 }
