@@ -2,19 +2,20 @@
 #  define USE_PTHREAD
 #endif
 
-#include <stdlib.h>
-#include <memory.h>
-#include <assert.h>
-#include <errno.h>
-
 #ifndef USE_PTHREAD
 #  include <windows.h>
-#  include <stdio.h>
 #  include <process.h>
 #else
 #  include <pthread.h>
-#  include <stdio.h>
 #endif
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <memory.h>
+#include <assert.h>
+#include <errno.h>
+#include <lualib.h>
+#include "l52util.h"
 
 /*export*/
 #ifdef _WIN32
@@ -40,7 +41,7 @@
 #endif
 
 #ifndef USE_PTHREAD
-#  define OS_THREAD_RETURT      unsigned int __stdcall
+#  define OS_THREAD_RETURN      unsigned int __stdcall
 #  define INVALID_THREAD        INVALID_HANDLE_VALUE
 #  define INFINITE_JOIN_TIMEOUT INFINITE
 #  define JOIN_OK               0
@@ -49,8 +50,7 @@
 typedef DWORD  join_timeout_t;
 typedef HANDLE os_thread_t;
 #else
-#  define OS_THREAD_RETURT      void *
-#  define INVALID_THREAD        0
+#  define OS_THREAD_RETURN      void *
 #  define INFINITE_JOIN_TIMEOUT -1
 #  define JOIN_OK               0
 #  define JOIN_ETIMEDOUT        ETIMEDOUT
@@ -58,8 +58,6 @@ typedef int       join_timeout_t;
 typedef pthread_t os_thread_t;
 #endif
 
-#include "l52util.h"
-#include <lualib.h>
 
 LLTHREADS_EXPORT_API int luaopen_llthreads(lua_State *L);
 
@@ -389,10 +387,8 @@ static llthread_child_t *llthread_child_new() {
 
   /* create new lua_State for the thread.             */
   /* open standard libraries.                         */
-  /* push traceback function as first value on stack. */
   this->L = luaL_newstate();
   open_thread_libs(this->L);
-  lua_pushcfunction(this->L, traceback); 
 
   return this;
 }
@@ -402,10 +398,14 @@ static void llthread_child_destroy(llthread_child_t *this) {
   FREE_STRUCT(this);
 }
 
-static OS_THREAD_RETURT llthread_child_thread_run(void *arg) {
+static OS_THREAD_RETURN llthread_child_thread_run(void *arg) {
   llthread_child_t *this = (llthread_child_t *)arg;
   lua_State *L = this->L;
-  int nargs = lua_gettop(L) - 2;
+  int nargs = lua_gettop(L) - 1;
+
+  /* push traceback function as first value on stack. */
+  lua_pushcfunction(this->L, traceback); 
+  lua_insert(L, 1);
 
   this->status = lua_pcall(L, nargs, LUA_MULTRET, 1);
 
@@ -485,8 +485,6 @@ static int llthread_push_results(lua_State *L, llthread_child_t *child, int idx,
 static int llthread_detach(llthread_t *this){
   int rc = 0;
   this->child = NULL;
-  FLAG_SET(this, TSTATE_DETACHED);
-  FLAG_UNSET(this, FLAG_JOIN_LUA);
 #ifdef USE_PTHREAD
   rc = pthread_detach(this->thread);
 #endif
