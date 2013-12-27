@@ -9,7 +9,6 @@ This is full dropin replacement for [llthreads](https://github.com/Neopallium/lu
 * does not support ffi interface (use Lua C API for LuaJIT)
 * returns nil instead of false on error
 * start method returns self instead of true on success
-* does not open all standart libraries (set LLTHREAD_REGISTER_STD_LIBRARY to on this feature)
 * register loaders for llthreads library itself
 
 ##Additional
@@ -17,6 +16,7 @@ This is full dropin replacement for [llthreads](https://github.com/Neopallium/lu
 * thread:join() method support arbitrary timeout on Windows threads
 * set_logger function allow logging errors (crash Lua VM) in current llthread's threads
 * thread:start() has additional parameter which control in which thread child Lua VM will be destroyed
+* allow pass cfunctions to child thread (e.g. to initialize Lua state) (experemental)
 
 ##Usage
 

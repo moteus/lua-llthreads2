@@ -52,6 +52,7 @@ script:
   - lua$LUA_SFX test_join_detach.lua
   - lua$LUA_SFX test_register_ffi.lua
   - lua$LUA_SFX test_logger.lua
+  - lua$LUA_SFX test_pass_cfunction.lua
 
 notifications:
   email:

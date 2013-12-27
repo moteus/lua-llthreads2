@@ -228,6 +228,11 @@ static int llthread_copy_value(llthread_copy_state *state, int depth, int idx) {
     }
     break;
   case LUA_TFUNCTION:
+    if(lua_iscfunction(state->from_L, idx)){
+      lua_CFunction fn = lua_tocfunction(state->from_L, idx);
+      lua_pushcfunction(state->to_L, fn);
+      break;
+    }
   case LUA_TUSERDATA:
   case LUA_TTHREAD:
   default:
