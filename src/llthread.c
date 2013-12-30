@@ -16,6 +16,8 @@
 #include <errno.h>
 #include <lualib.h>
 #include "l52util.h"
+#include "traceback.inc"
+#include "copy.inc"
 
 /*export*/
 #ifdef _WIN32
@@ -58,30 +60,6 @@ typedef int       join_timeout_t;
 typedef pthread_t os_thread_t;
 #endif
 
-LLTHREADS_EXPORT_API int luaopen_llthreads(lua_State *L);
-
-#define LLTHREAD_T_NAME "LLThread"
-static const char *LLTHREAD_T = LLTHREAD_T_NAME;
-static const char *LLTHREAD_LOGGER_HOLDER = LLTHREAD_T_NAME " logger holder";
-
-//{ traceback
-
-#include "traceback.inc"
-
-//}
-
-//{ copy values
-
-#include "copy.inc"
-
-//}
-
-static int fail(lua_State *L, const char *msg){
-  lua_pushnil(L);
-  lua_pushstring(L, msg);
-  return 2;
-}
-
 #define ERROR_LEN 1024
 
 #define flags_t unsigned char
@@ -102,6 +80,12 @@ static int fail(lua_State *L, const char *msg){
 #define ALLOC_STRUCT(S) (S*)calloc(1, sizeof(S))
 #define FREE_STRUCT(O) free(O)
 
+LLTHREADS_EXPORT_API int luaopen_llthreads(lua_State *L);
+
+#define LLTHREAD_T_NAME "LLThread"
+static const char *LLTHREAD_T = LLTHREAD_T_NAME;
+static const char *LLTHREAD_LOGGER_HOLDER = LLTHREAD_T_NAME " logger holder";
+
 typedef struct llthread_child_t {
   lua_State  *L;
   int        status;
@@ -113,6 +97,12 @@ typedef struct llthread_t {
   os_thread_t       thread;
   flags_t           flags;
 } llthread_t;
+
+static int fail(lua_State *L, const char *msg){
+  lua_pushnil(L);
+  lua_pushstring(L, msg);
+  return 2;
+}
 
 //{ logger interface
 void llthread_log(lua_State *L, const char *hdr, const char *msg){
