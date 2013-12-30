@@ -2,9 +2,8 @@ local llthreads = require"llthreads"
 local utils     = require "utils"
 local sleep     = utils.sleep
 
-local include = [[
+local include = utils.thread_init .. [[
 local llthreads = require"llthreads"
-]] .. utils.thread_init .. [[ 
 local sleep = require "utils".sleep
 ]]
 
@@ -17,6 +16,8 @@ print("thread:join(0): ", ok, err)
 assert(ok == nil)
 assert(err == "timeout")
 
-print("thread:join(): ", thread:join())
+local ok, err = thread:join()
+print("thread:join(): ", ok, err)
+assert(ok, err)
 print("Done!")
 

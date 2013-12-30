@@ -340,17 +340,16 @@ void llthread_log(lua_State *L, const char *hdr, const char *msg){
 //{ llthread_child
 
 static void open_thread_libs(lua_State *L){
+#define L_REGLIB(L, name) lua_pushcfunction(L, luaopen_##name); lua_setfield(L, -2)
+
   int top = lua_gettop(L);
 
 #ifndef LLTHREAD_REGISTER_STD_LIBRARY
+
   luaL_openlibs(L);
   lua_getglobal(L, "package"); lua_getfield(L, -1, "preload"); lua_remove(L, -2);
-  lua_pushcfunction(L, luaopen_llthreads); lua_setfield(L, -2, "llthreads");
-  lua_settop(L, top);
-  return;
-#else
 
-#define L_REGLIB(L, name, G) lua_pushcfunction(L, luaopen_##name); lua_setfield(L, -2, #name)
+#else
 
   lutil_require(L, "_G",      luaopen_base,    1);
   lutil_require(L, "package", luaopen_package, 1);
@@ -363,13 +362,12 @@ static void open_thread_libs(lua_State *L){
   L_REGLIB(L, math,      1);
   L_REGLIB(L, table,     1);
   L_REGLIB(L, string,    1);
-  L_REGLIB(L, llthreads, 0);
 
 #ifdef LUA_DBLIBNAME
   L_REGLIB(L, debug,     1);
 #endif
 
-  /* @fixme find out luaopen_XXX in runtime */
+  /* @fixme find out luaopen_XXX at runtime */
 #ifdef LUA_JITLIBNAME
   L_REGLIB(L, bit,        1);
   L_REGLIB(L, jit,        1);
@@ -378,10 +376,15 @@ static void open_thread_libs(lua_State *L){
   L_REGLIB(L, bit32,      1);
 #endif
 
-  lua_settop(L, top);
-#undef L_REGLIB
-
 #endif
+
+#ifdef LLTHREAD_REGISTER_THREAD_LIBRARY
+  L_REGLIB(L, llthreads, 0);
+#endif
+
+  lua_settop(L, top);
+
+#undef L_REGLIB
 }
 
 static llthread_child_t *llthread_child_new() {
@@ -529,6 +532,7 @@ static int llthread_detach(llthread_t *this){
   int rc = 0;
 
   assert(FLAGS_IS_SET(this, TSTATE_STARTED));
+  assert(this->child != NULL);
 
   /*we can not deatach joined thread*/
   if(FLAGS_IS_SET(this, TSTATE_JOINED))

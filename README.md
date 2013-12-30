@@ -9,7 +9,6 @@ This is full dropin replacement for [llthreads](https://github.com/Neopallium/lu
 * does not support ffi interface (use Lua C API for LuaJIT)
 * returns nil instead of false on error
 * start method returns self instead of true on success
-* register loaders for llthreads library itself
 
 ##Additional
 * thread:join() method support zero timeout to check if thread alive (does not work on Windows with pthreads)
@@ -66,6 +65,26 @@ thread:start(true, true)
 
 -- we can call join
 thread:join()
+```
+
+### Pass to child thread host application`s library loader
+If you close parent Lua state then some dynamic library may be unloaded
+and cfunction in child Lua state (thread) became invalid.
+
+``` Lua 
+-- `myhost.XXX` modules is built-in modules in host application
+-- host application registers cfunction as module loader
+local preload = {}
+preload[ 'myhost.logger' ] = package.preload[ 'myhost.logger' ]
+preload[ 'myhost.config' ] = package.preload[ 'myhost.config' ]
+llthreads.new([[
+  -- registers preload
+  local preload  = ...
+  for name, fn in pairs(preload) do package.preload[name] = fn end
+
+  local log = require 'myhost.logger'
+
+]], preload):start(true)
 ```
 
 [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/moteus/lua-llthreads2/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
