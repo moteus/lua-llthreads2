@@ -58,7 +58,6 @@ typedef int       join_timeout_t;
 typedef pthread_t os_thread_t;
 #endif
 
-
 LLTHREADS_EXPORT_API int luaopen_llthreads(lua_State *L);
 
 #define LLTHREAD_T_NAME "LLThread"
@@ -67,217 +66,13 @@ static const char *LLTHREAD_LOGGER_HOLDER = LLTHREAD_T_NAME " logger holder";
 
 //{ traceback
 
-#define ERROR_LEN 1024
-
-/******************************************************************************
-* traceback() function from Lua 5.1/5.2 source.
-* Copyright (C) 1994-2008 Lua.org, PUC-Rio.  All rights reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining
-* a copy of this software and associated documentation files (the
-* "Software"), to deal in the Software without restriction, including
-* without limitation the rights to use, copy, modify, merge, publish,
-* distribute, sublicense, and/or sell copies of the Software, and to
-* permit persons to whom the Software is furnished to do so, subject to
-* the following conditions:
-*
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-******************************************************************************/
-#if !defined(LUA_VERSION_NUM) || (LUA_VERSION_NUM == 501)
-/* from Lua 5.1 */
-static int traceback (lua_State *L) {
-  if (!lua_isstring(L, 1))  /* 'message' not a string? */
-    return 1;  /* keep it intact */
-  lua_getglobal(L, "debug");
-  if (!lua_istable(L, -1)) {
-    lua_pop(L, 1);
-    return 1;
-  }
-  lua_getfield(L, -1, "traceback");
-  if (!lua_isfunction(L, -1)) {
-    lua_pop(L, 2);
-    return 1;
-  }
-  lua_pushvalue(L, 1);  /* pass error message */
-  lua_pushinteger(L, 2);  /* skip this function and traceback */
-  lua_call(L, 2, 1);  /* call debug.traceback */
-  return 1;
-}
-#else
-/* from Lua 5.2 */
-static int traceback (lua_State *L) {
-  const char *msg = lua_tostring(L, 1);
-  if (msg)
-    luaL_traceback(L, L, msg, 1);
-  else if (!lua_isnoneornil(L, 1)) {  /* is there an error object? */
-    if (!luaL_callmeta(L, 1, "__tostring"))  /* try its 'tostring' metamethod */
-      lua_pushliteral(L, "(no error message)");
-  }
-  return 1;
-}
-#endif
+#include "traceback.inc"
 
 //}
 
 //{ copy values
 
-/* maximum recursive depth of table copies. */
-#define MAX_COPY_DEPTH 30
-
-typedef struct {
-  lua_State *from_L;
-  lua_State *to_L;
-  int has_cache;
-  int cache_idx;
-  int is_arg;
-} llthread_copy_state;
-
-static int llthread_copy_table_from_cache(llthread_copy_state *state, int idx) {
-  void *ptr;
-
-  /* convert table to pointer for lookup in cache. */
-  ptr = (void *)lua_topointer(state->from_L, idx);
-  if(ptr == NULL) return 0; /* can't convert to pointer. */
-
-  /* check if we need to create the cache. */
-  if(!state->has_cache) {
-    lua_newtable(state->to_L);
-    lua_replace(state->to_L, state->cache_idx);
-    state->has_cache = 1;
-  }
-
-  lua_pushlightuserdata(state->to_L, ptr);
-  lua_rawget(state->to_L, state->cache_idx);
-  if(lua_isnil(state->to_L, -1)) {
-    /* not in cache. */
-    lua_pop(state->to_L, 1);
-    /* create new table and add to cache. */
-    lua_newtable(state->to_L);
-    lua_pushlightuserdata(state->to_L, ptr);
-    lua_pushvalue(state->to_L, -2);
-    lua_rawset(state->to_L, state->cache_idx);
-    return 0;
-  }
-  /* found table in cache. */
-  return 1;
-}
-
-static int llthread_copy_value(llthread_copy_state *state, int depth, int idx) {
-  const char *str;
-  size_t str_len;
-  int kv_pos;
-
-  /* Maximum recursive depth */
-  if(++depth > MAX_COPY_DEPTH) {
-    return luaL_error(state->from_L, "Hit maximum copy depth (%d > %d).", depth, MAX_COPY_DEPTH);
-  }
-
-  /* only support string/number/boolean/nil/table/lightuserdata. */
-  switch(lua_type(state->from_L, idx)) {
-  case LUA_TNIL:
-    lua_pushnil(state->to_L);
-    break;
-  case LUA_TNUMBER:
-    lua_pushnumber(state->to_L, lua_tonumber(state->from_L, idx));
-    break;
-  case LUA_TBOOLEAN:
-    lua_pushboolean(state->to_L, lua_toboolean(state->from_L, idx));
-    break;
-  case LUA_TSTRING:
-    str = lua_tolstring(state->from_L, idx, &(str_len));
-    lua_pushlstring(state->to_L, str, str_len);
-    break;
-  case LUA_TLIGHTUSERDATA:
-    lua_pushlightuserdata(state->to_L, lua_touserdata(state->from_L, idx));
-    break;
-  case LUA_TTABLE:
-    /* make sure there is room on the new state for 3 values (table,key,value) */
-    if(!lua_checkstack(state->to_L, 3)) {
-      return luaL_error(state->from_L, "To stack overflow!");
-    }
-    /* make room on from stack for key/value pairs. */
-    luaL_checkstack(state->from_L, 2, "From stack overflow!");
-
-    /* check cache for table. */
-    if(llthread_copy_table_from_cache(state, idx)) {
-      /* found in cache don't need to copy table. */
-      break;
-    }
-    lua_pushnil(state->from_L);
-    while (lua_next(state->from_L, idx) != 0) {
-      /* key is at (top - 1), value at (top), but we need to normalize these
-       * to positive indices */
-      kv_pos = lua_gettop(state->from_L);
-      /* copy key */
-      llthread_copy_value(state, depth, kv_pos - 1);
-      /* copy value */
-      llthread_copy_value(state, depth, kv_pos);
-      /* Copied key and value are now at -2 and -1 in state->to_L. */
-      lua_settable(state->to_L, -3);
-      /* Pop value for next iteration */
-      lua_pop(state->from_L, 1);
-    }
-    break;
-  case LUA_TFUNCTION:
-    if(lua_iscfunction(state->from_L, idx)){
-      lua_CFunction fn = lua_tocfunction(state->from_L, idx);
-      lua_pushcfunction(state->to_L, fn);
-      break;
-    }
-  case LUA_TUSERDATA:
-  case LUA_TTHREAD:
-  default:
-    if (state->is_arg) {
-      return luaL_argerror(state->from_L, idx, "function/userdata/thread types un-supported.");
-    } else {
-      /* convert un-supported types to an error string. */
-      lua_pushfstring(state->to_L, "Un-supported value: %s: %p",
-        lua_typename(state->from_L, lua_type(state->from_L, idx)), lua_topointer(state->from_L, idx));
-    }
-  }
-
-  return 1;
-}
-
-static int llthread_copy_values(lua_State *from_L, lua_State *to_L, int idx, int top, int is_arg) {
-  llthread_copy_state state;
-  int nvalues = 0;
-  int n;
-
-  nvalues = (top - idx) + 1;
-  /* make sure there is room on the new state for the values. */
-  if(!lua_checkstack(to_L, nvalues + 1)) {
-    return luaL_error(from_L, "To stack overflow!");
-  }
-
-  /* setup copy state. */
-  state.from_L = from_L;
-  state.to_L = to_L;
-  state.is_arg = is_arg;
-  state.has_cache = 0; /* don't create cache table unless it is needed. */
-  lua_pushnil(to_L);
-  state.cache_idx = lua_gettop(to_L);
-
-  nvalues = 0;
-  for(n = idx; n <= top; n++) {
-    llthread_copy_value(&state, 0, n);
-    ++nvalues;
-  }
-
-  /* remove cache table. */
-  lua_remove(to_L, state.cache_idx);
-
-  return nvalues;
-}
+#include "copy.inc"
 
 //}
 
@@ -287,20 +82,22 @@ static int fail(lua_State *L, const char *msg){
   return 2;
 }
 
+#define ERROR_LEN 1024
+
 #define flags_t unsigned char
 
-#define TSTATE_NONE     (flags_t)0
-#define TSTATE_STARTED  (flags_t)1<<0
-#define TSTATE_DETACHED (flags_t)1<<1
-#define TSTATE_JOINED   (flags_t)1<<2
-#define FLAG_JOIN_LUA   (flags_t)1<<3
+#define FLAG_NONE      (flags_t)0
+#define FLAG_STARTED   (flags_t)1<<0
+#define FLAG_DETACHED  (flags_t)1<<1
+#define FLAG_JOINED    (flags_t)1<<2
+#define FLAG_JOINABLE  (flags_t)1<<3
 
 /*At least one flag*/
 #define FLAG_IS_SET(O, F) (O->flags & (flags_t)(F))
-/*All flags*/
-#define FLAGS_IS_SET(O, F) ((F) == FLAG_IS_SET(O, F))
 #define FLAG_SET(O, F) O->flags |= (flags_t)(F)
 #define FLAG_UNSET(O, F) O->flags &= ~((flags_t)(F))
+#define IS(O, F) FLAG_IS_SET(O, FLAG_##F)
+#define SET(O, F) FLAG_SET(O, FLAG_##F)
 
 #define ALLOC_STRUCT(S) (S*)calloc(1, sizeof(S))
 #define FREE_STRUCT(O) free(O)
@@ -422,7 +219,7 @@ static OS_THREAD_RETURN llthread_child_thread_run(void *arg) {
     llthread_log(L, "Error from thread: ", lua_tostring(L, -1));
   }
 
-  if(FLAG_IS_SET(this, TSTATE_DETACHED) || !FLAG_IS_SET(this, FLAG_JOIN_LUA)) {
+  if(IS(this, DETACHED) || !IS(this, JOINABLE)) {
     /* thread is detached, so it must clean-up the child state. */
     llthread_child_destroy(this);
     this = NULL;
@@ -450,15 +247,15 @@ static void llthread_validate(llthread_t *this){
   /* describe valid state of llthread_t object 
    * from after create and before destroy
    */
-  if(!FLAGS_IS_SET(this, TSTATE_STARTED)){
-    assert(!FLAGS_IS_SET(this, TSTATE_DETACHED));
-    assert(!FLAGS_IS_SET(this, TSTATE_JOINED));
-    assert(!FLAGS_IS_SET(this, FLAG_JOIN_LUA));
+  if(!IS(this, STARTED)){
+    assert(!IS(this, DETACHED));
+    assert(!IS(this, JOINED));
+    assert(!IS(this, JOINABLE));
     return;
   }
 
-  if(FLAGS_IS_SET(this, TSTATE_DETACHED)){
-    if(!FLAGS_IS_SET(this, FLAG_JOIN_LUA)) assert(this->child == NULL);
+  if(IS(this, DETACHED)){
+    if(!IS(this, JOINABLE)) assert(this->child == NULL);
     else assert(this->child != NULL);
   }
 }
@@ -471,7 +268,7 @@ static llthread_t *llthread_new() {
   llthread_t *this = ALLOC_STRUCT(llthread_t);
   if(!this) return NULL;
 
-  this->flags  = TSTATE_NONE;
+  this->flags  = FLAG_NONE;
 #ifndef USE_PTHREAD
   this->thread = INVALID_THREAD;
 #endif
@@ -493,28 +290,36 @@ static void llthread_cleanup_child(llthread_t *this) {
 
 static void llthread_destroy(llthread_t *this) {
   do{
-    if(!FLAG_IS_SET(this, TSTATE_STARTED)){
+    /* thread not started */
+    if(!IS(this, STARTED)){
       llthread_cleanup_child(this);
       break;
     }
-    if(!FLAG_IS_SET(this, FLAG_JOIN_LUA)) break;
-    if( FLAG_IS_SET(this, TSTATE_DETACHED)){
-      llthread_detach(this);
+
+    /* DETACHED */
+    if(IS(this, DETACHED)){
+      if(IS(this, JOINABLE)){
+        llthread_detach(this);
+      }
       break;
     }
 
-    if(!FLAG_IS_SET(this, TSTATE_JOINED)){
-      /* @todo log warning about lost thread object for debug? */
-      llthread_child_t *child = this->child;
+    /* ATACHED */
+    if(!IS(this, JOINED)){
       llthread_join(this, INFINITE_JOIN_TIMEOUT);
-      if(child && child->status != 0) {
-        /*@fixme remove redundant log*/
-        llthread_log(child->L, "Error from non-joined thread: ", lua_tostring(child->L, -1));
+      if(!IS(this, JOINED)){
+        /* @todo use current lua state to logging */
+        /*
+          * char buf[ERROR_LEN];
+          * strerror_r(errno, buf, ERROR_LEN);
+          * llthread_log(L, "Error can not join thread on gc: ", buf);
+          */
       }
     }
+    if(IS(this, JOINABLE)){
+      llthread_cleanup_child(this);
+    }
 
-    assert(FLAG_IS_SET(this, TSTATE_JOINED));
-    llthread_cleanup_child(this);
   }while(0);
 
   FREE_STRUCT(this);
@@ -531,11 +336,11 @@ static int llthread_push_results(lua_State *L, llthread_child_t *child, int idx,
 static int llthread_detach(llthread_t *this){
   int rc = 0;
 
-  assert(FLAGS_IS_SET(this, TSTATE_STARTED));
+  assert(IS(this, STARTED));
   assert(this->child != NULL);
 
-  /*we can not deatach joined thread*/
-  if(FLAGS_IS_SET(this, TSTATE_JOINED))
+  /*we can not detach joined thread*/
+  if(IS(this, JOINED))
     return 0;
 
   this->child = NULL;
@@ -549,24 +354,24 @@ static int llthread_detach(llthread_t *this){
   return rc;
 }
 
-/*   | detached | join_lua  || return values |  which thread     | gc calls  | detach on |
- *   |          |           || thread:join() | closes lua state  |           |           |
- *   -------------------------------------------------------------------------------------
- *   |   false  |   falas   ||   <NONE>      | child             |  <NONE>   |  <NEVER>  |
- *  *|   false  |   true    ||   Lua values  | parent            |  join     |  <NEVER>  |
- *  *|   true   |   false   ||   <ERROR>     | child             |  <NONE>   |   start   |
- *   |   true   |   true    ||   <NONE>      | child             |  detach   |    gc     |
- *   -------------------------------------------------------------------------------------
+/*   | detached | joinable ||    join    | which thread  |  gc    | detach  |
+ *   |          |          ||   return   | destroy child | calls  |   on    |
+ *   ------------------------------------------------------------------------
+ *   |   false  |   falas  ||  <NONE>    |    child      |  join  | <NEVER> |
+ *  *|   false  |   true   || Lua values |    parent     |  join  | <NEVER> |
+ *  *|   true   |   false  ||  <ERROR>   |    child      | <NONE> |  start  |
+ *   |   true   |   true   ||  <NONE>    |    child      | detach |   gc    |
+ *   ------------------------------------------------------------------------
  *   * llthread behavior.
  */
-static int llthread_start(llthread_t *this, int start_detached, int join_lua) {
+static int llthread_start(llthread_t *this, int start_detached, int joinable) {
   llthread_child_t *child = this->child;
   int rc = 0;
 
   llthread_validate(this);
 
-  if(join_lua) FLAG_SET(child, FLAG_JOIN_LUA);
-  if(start_detached) FLAG_SET(child, TSTATE_DETACHED);
+  if(joinable) SET(child, JOINABLE);
+  if(start_detached) SET(child, DETACHED);
 
 #ifndef USE_PTHREAD
   this->thread = (HANDLE)_beginthreadex(NULL, 0, llthread_child_thread_run, child, 0, NULL);
@@ -578,10 +383,10 @@ static int llthread_start(llthread_t *this, int start_detached, int join_lua) {
 #endif
 
   if(rc == 0) {
-    FLAG_SET(this, TSTATE_STARTED);
-    if(join_lua) FLAG_SET(this, FLAG_JOIN_LUA);
-    if(start_detached) FLAG_SET(this, TSTATE_DETACHED);
-    if((start_detached)&&(!join_lua)){
+    SET(this, STARTED);
+    if(joinable) SET(this, JOINABLE);
+    if(start_detached) SET(this, DETACHED);
+    if((start_detached)&&(!joinable)){
       rc = llthread_detach(this);
     }
   }
@@ -594,7 +399,7 @@ static int llthread_start(llthread_t *this, int start_detached, int join_lua) {
 static int llthread_join(llthread_t *this, join_timeout_t timeout) {
   llthread_validate(this);
 
-  if(FLAG_IS_SET(this, TSTATE_JOINED)){
+  if(IS(this, JOINED)){
     return JOIN_OK;
   } else{
 #ifndef USE_PTHREAD
@@ -604,7 +409,7 @@ static int llthread_join(llthread_t *this, join_timeout_t timeout) {
   if( ret == WAIT_OBJECT_0){ /* Destroy the thread object. */
     CloseHandle( this->thread );
     this->thread = INVALID_THREAD;
-    FLAG_SET(this, TSTATE_JOINED);
+    SET(this, JOINED);
 
     llthread_validate(this);
 
@@ -635,7 +440,7 @@ static int llthread_join(llthread_t *this, join_timeout_t timeout) {
   /* then join the thread. */
   rc = pthread_join(this->thread, NULL);
   if((rc == 0) || (rc == ESRCH)) {
-    FLAG_SET(this, TSTATE_JOINED);
+    SET(this, JOINED);
     rc = JOIN_OK;
   }
 
@@ -700,16 +505,16 @@ static int l_llthread_delete(lua_State *L) {
 static int l_llthread_start(lua_State *L) {
   llthread_t *this = l_llthread_at(L, 1);
   int start_detached = lua_toboolean(L, 2);
-  int join_lua, rc;
+  int joinable, rc;
 
-  if(!lua_isnone(L, 3)) join_lua = lua_toboolean(L, 3);
-  else join_lua = start_detached ? 0 : 1;
+  if(!lua_isnone(L, 3)) joinable = lua_toboolean(L, 3);
+  else joinable = start_detached ? 0 : 1;
 
-  if(FLAG_IS_SET(this, TSTATE_STARTED)) {
+  if(IS(this, STARTED)) {
     return fail(L, "Thread already started.");
   }
 
-  rc = llthread_start(this, start_detached, join_lua);
+  rc = llthread_start(this, start_detached, joinable);
   if(rc != 0) {
     char buf[ERROR_LEN];
     strerror_r(errno, buf, ERROR_LEN);
@@ -725,27 +530,28 @@ static int l_llthread_join(lua_State *L) {
   llthread_child_t *child = this->child;
   int rc;
 
-  if(!FLAG_IS_SET(this, TSTATE_STARTED )) {
+  if(!IS(this, STARTED )) {
     return fail(L, "Can't join a thread that hasn't be started.");
   }
-  if( FLAG_IS_SET(this, TSTATE_DETACHED) && !FLAG_IS_SET(this, FLAG_JOIN_LUA)) {
+  if( IS(this, DETACHED) && !IS(this, JOINABLE)) {
     return fail(L, "Can't join a thread that has been detached.");
   }
-  if( FLAG_IS_SET(this, TSTATE_JOINED  )) {
+  if( IS(this, JOINED  )) {
     return fail(L, "Can't join a thread that has already been joined.");
   }
 
   /* join the thread. */
   rc = llthread_join(this, luaL_optint(L, 2, INFINITE_JOIN_TIMEOUT));
 
-  if(child && FLAG_IS_SET(this, TSTATE_JOINED)) {
+  if(child && IS(this, JOINED)) {
     int top;
 
-    if(FLAG_IS_SET(this, TSTATE_DETACHED) || !FLAG_IS_SET(this, FLAG_JOIN_LUA)){
+    if(IS(this, DETACHED) || !IS(this, JOINABLE)){
       /*child lua state has been destroyed by child thread*/
       /*@todo return thread exit code*/
+      lua_pushboolean(L, 1);
       lua_pushnumber(L, 0);
-      return 1;
+      return 2;
     }
     
     /* copy values from child lua state */
