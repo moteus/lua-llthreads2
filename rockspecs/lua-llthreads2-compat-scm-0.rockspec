@@ -1,4 +1,4 @@
-package = "lua-llthreads2"
+package = "lua-llthreads2-compat"
 version = "scm-0"
 source = {
   url = "https://github.com/moteus/lua-llthreads2/archive/master.zip",
@@ -9,7 +9,7 @@ description = {
   homepage = "http://github.com/moteus/lua-llthreads2",
   license = "MIT/X11",
   detailed = [[
-    This is drop-in replacement for `lua-llthread` module but the module called `llthreads2`.
+    This is drop-in replacement for `lua-llthread` module.
     In additional module supports: thread join  with zero timeout; logging thread errors with 
     custom logger; run detached joinable threads; pass cfunctions as argument to child thread.
   ]],
@@ -36,9 +36,9 @@ build = {
     }
   },
   modules = {
-    llthreads2 = {
+    llthreads = {
       sources = { "src/l52util.c", "src/llthread.c" },
-      defines = { "LLTHREAD_MODULE_NAME=llthreads2" },
+      defines = { "LLTHREAD_MODULE_NAME=llthreads"  },
     }
   }
 }

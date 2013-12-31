@@ -80,11 +80,21 @@ typedef pthread_t os_thread_t;
 #define ALLOC_STRUCT(S) (S*)calloc(1, sizeof(S))
 #define FREE_STRUCT(O) free(O)
 
-LLTHREADS_EXPORT_API int luaopen_llthreads(lua_State *L);
+#ifndef LLTHREAD_MODULE_NAME
+#  define LLTHREAD_MODULE_NAME llthreads
+#endif
 
-#define LLTHREAD_T_NAME "LLThread"
-static const char *LLTHREAD_T = LLTHREAD_T_NAME;
-static const char *LLTHREAD_LOGGER_HOLDER = LLTHREAD_T_NAME " logger holder";
+#define CAT(S1,S2) S1##S2
+
+#define LLTHREAD_OPEN_NAME_IMPL(NAME) CAT(luaopen_, NAME)
+
+#define LLTHREAD_OPEN_NAME LLTHREAD_OPEN_NAME_IMPL(LLTHREAD_MODULE_NAME)
+
+LLTHREADS_EXPORT_API int LLTHREAD_OPEN_NAME(lua_State *L);
+
+#define LLTHREAD_NAME "LLThread"
+static const char *LLTHREAD_TAG = LLTHREAD_NAME;
+static const char *LLTHREAD_LOGGER_HOLDER = LLTHREAD_NAME " logger holder";
 
 typedef struct llthread_child_t {
   lua_State  *L;
@@ -476,7 +486,7 @@ static llthread_t *llthread_create(lua_State *L, const char *code, size_t code_l
 //{ Lua interface to llthread
 
 static llthread_t *l_llthread_at (lua_State *L, int i) {
-  llthread_t **this = (llthread_t **)lutil_checkudatap (L, i, LLTHREAD_T);
+  llthread_t **this = (llthread_t **)lutil_checkudatap (L, i, LLTHREAD_TAG);
   luaL_argcheck (L,  this != NULL, i, "thread expected");
   luaL_argcheck (L, *this != NULL, i, "thread expected");
   // luaL_argcheck (L, !(counter->flags & FLAG_DESTROYED), 1, "PDH Counter is destroyed");
@@ -484,7 +494,7 @@ static llthread_t *l_llthread_at (lua_State *L, int i) {
 }
 
 static int l_llthread_delete(lua_State *L) {
-  llthread_t **pthis = (llthread_t **)lutil_checkudatap (L, 1, LLTHREAD_T);
+  llthread_t **pthis = (llthread_t **)lutil_checkudatap (L, 1, LLTHREAD_TAG);
   luaL_argcheck (L, pthis != NULL, 1, "thread expected");
   if(*pthis == NULL) return 0;
   llthread_destroy(*pthis);
@@ -579,7 +589,7 @@ static int l_llthread_join(lua_State *L) {
 
 static int l_llthread_new(lua_State *L) {
   size_t lua_code_len; const char *lua_code = luaL_checklstring(L, 1, &lua_code_len);
-  llthread_t **this = lutil_newudatap(L, llthread_t*, LLTHREAD_T);
+  llthread_t **this = lutil_newudatap(L, llthread_t*, LLTHREAD_TAG);
   lua_insert(L, 2); /*move self prior args*/
   *this = llthread_create(L, lua_code, lua_code_len);
 
@@ -611,9 +621,9 @@ static const struct luaL_Reg l_llthreads_lib[] = {
   {NULL, NULL}
 };
 
-LLTHREADS_EXPORT_API int luaopen_llthreads(lua_State *L) {
+LLTHREADS_EXPORT_API int LLTHREAD_OPEN_NAME(lua_State *L) {
   int top = lua_gettop(L);
-  lutil_createmetap(L, LLTHREAD_T,   l_llthread_meth,   0);
+  lutil_createmetap(L, LLTHREAD_TAG,   l_llthread_meth,   0);
   lua_settop(L, top);
 
   lua_newtable(L);

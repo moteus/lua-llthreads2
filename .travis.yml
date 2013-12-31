@@ -40,7 +40,7 @@ before_install:
 
 install:
   - sudo luarocks install lunitx
-  - sudo luarocks make rockspecs/lua-llthreads2-scm-0.rockspec
+  - sudo luarocks make rockspecs/lua-llthreads2-compat-scm-0.rockspec
 
 script: 
   - cd test
