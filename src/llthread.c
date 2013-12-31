@@ -294,16 +294,16 @@ static void llthread_destroy(llthread_t *this) {
       break;
     }
 
-    /* ATACHED */
+    /* ATTACHED */
     if(!IS(this, JOINED)){
       llthread_join(this, INFINITE_JOIN_TIMEOUT);
       if(!IS(this, JOINED)){
         /* @todo use current lua state to logging */
         /*
-          * char buf[ERROR_LEN];
-          * strerror_r(errno, buf, ERROR_LEN);
-          * llthread_log(L, "Error can not join thread on gc: ", buf);
-          */
+         * char buf[ERROR_LEN];
+         * strerror_r(errno, buf, ERROR_LEN);
+         * llthread_log(L, "Error can not join thread on gc: ", buf);
+         */
       }
     }
     if(IS(this, JOINABLE)){
@@ -329,11 +329,12 @@ static int llthread_detach(llthread_t *this){
   assert(IS(this, STARTED));
   assert(this->child != NULL);
 
+  this->child = NULL;
+
   /*we can not detach joined thread*/
   if(IS(this, JOINED))
     return 0;
 
-  this->child = NULL;
 #ifdef USE_PTHREAD
   rc = pthread_detach(this->thread);
 #else
