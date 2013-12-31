@@ -33,14 +33,14 @@ llthread.set_logger(function(msg) LOG.error(msg) end)
 error("SOME ERROR")
 ```
 
-### Start atached thread collectd in child thread
+### Start attached thread collectd in child thread
 ``` Lua 
 -- This is main thread.
 local thread = require "llthreads".new[[
   require "utils".sleep(5)
 ]]
 
--- We tell that we start atached thread but child Lua State shuld be close in child thread. 
+-- We tell that we start attached thread but child Lua State shuld be close in child thread. 
 -- If `thread` became garbage in main thread then finallizer calls thread:join() 
 -- and main thread may hungup.
 thread:start(false, false)
@@ -51,14 +51,14 @@ thread:start(false, false)
 thread:join()
 ```
 
-### Start detached thread on which we can call join
+### Start detached joinable thread
 ``` Lua 
 -- This is main thread.
 local thread = require "llthreads".new[[
   require "utils".sleep(5)
 ]]
 
--- We tell that we start detached joinable thread. In fact we start atached 
+-- We tell that we start detached joinable thread. In fact we start attached 
 -- thread but if `thread` became garbage in main thread then finallizer just 
 -- detach child thread and main thread may not hungup.
 thread:start(true, true)
