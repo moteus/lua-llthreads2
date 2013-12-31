@@ -22,14 +22,14 @@ build = {
   platforms = {
     unix = {
       modules = {
-        llthreads = {
+        llthreads2 = {
           libraries = {"pthread"},
         }
       }
     },
     windows = {
       modules = {
-        llthreads = {
+        llthreads2 = {
           libraries = {"kernel32"},
         }
       }
