@@ -15,7 +15,7 @@ This is full dropin replacement for [llthreads](https://github.com/Neopallium/lu
 * thread:join() method support arbitrary timeout on Windows threads
 * set_logger function allow logging errors (crash Lua VM) in current llthread's threads
 * thread:start() has additional parameter which control in which thread child Lua VM will be destroyed
-* allow pass cfunctions to child thread (e.g. to initialize Lua state) (experemental)
+* allow pass cfunctions to child thread (e.g. to initialize Lua state)
 
 ##Usage
 
