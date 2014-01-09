@@ -2,6 +2,11 @@
 #  define USE_PTHREAD
 #endif
 
+#define LLTHREAD_VERSION_MAJOR 0
+#define LLTHREAD_VERSION_MINOR 1
+#define LLTHREAD_VERSION_PATCH 0
+#define LLTHREAD_VERSION_COMMENT "dev"
+
 #ifndef USE_PTHREAD
 #  include <windows.h>
 #  include <process.h>
@@ -607,6 +612,40 @@ static const struct luaL_Reg l_llthread_meth[] = {
 
 //}
 
+//{ version
+
+static int l_llthread_version(lua_State *L){
+  lua_pushnumber(L, LLTHREAD_VERSION_MAJOR);
+  lua_pushnumber(L, LLTHREAD_VERSION_MINOR);
+  lua_pushnumber(L, LLTHREAD_VERSION_PATCH);
+#ifdef LLTHREAD_VERSION_COMMENT
+  if(LLTHREAD_VERSION_COMMENT[0]){
+    lua_pushliteral(L, LLTHREAD_VERSION_COMMENT);
+    return 4;
+  }
+#endif
+  return 3;
+}
+
+static int l_llthread_push_version(lua_State *L){
+  lua_pushnumber(L, LLTHREAD_VERSION_MAJOR);
+  lua_pushliteral(L, ".");
+  lua_pushnumber(L, LLTHREAD_VERSION_MINOR);
+  lua_pushliteral(L, ".");
+  lua_pushnumber(L, LLTHREAD_VERSION_PATCH);
+#ifdef LLTHREAD_VERSION_COMMENT
+  if(LLTHREAD_VERSION_COMMENT[0]){
+    lua_pushliteral(L, "-"LLTHREAD_VERSION_COMMENT);
+    lua_concat(L, 6);
+  }
+  else
+#endif
+  lua_concat(L, 5);
+  return 1;
+}
+
+//}
+
 static int l_llthread_set_logger(lua_State *L){
   lua_settop(L, 1);
   luaL_argcheck(L, lua_isfunction(L, 1), 1, "function expected");
@@ -617,6 +656,7 @@ static int l_llthread_set_logger(lua_State *L){
 static const struct luaL_Reg l_llthreads_lib[] = {
   {"new",           l_llthread_new           },
   {"set_logger",    l_llthread_set_logger    },
+  {"version",       l_llthread_version       },
 
   {NULL, NULL}
 };
@@ -628,5 +668,10 @@ LLTHREADS_EXPORT_API int LLTHREAD_OPEN_NAME(lua_State *L) {
 
   lua_newtable(L);
   luaL_setfuncs(L, l_llthreads_lib, 0);
+
+  lua_pushliteral(L, "_VERSION");
+  l_llthread_push_version(L);
+  lua_rawset(L, -3);
+
   return 1;
 }

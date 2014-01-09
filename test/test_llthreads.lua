@@ -21,6 +21,8 @@
 local llthreads = require"llthreads"
 local sleep     = require"utils".sleep
 
+print("LLThreads version : ", llthreads._VERSION)
+
 local function detached_thread(...)
 	local thread = llthreads.new([[ print("print_detached_thread:", ...) ]], ...)
 	-- start detached thread
