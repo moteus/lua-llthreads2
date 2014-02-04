@@ -38,9 +38,14 @@ print("thread:join(0): ", ok, err)
 assert(ok == nil)
 assert(err == "timeout")
 
-utils.sleep(5)
-local ok, err = thread:join(0)
-print("thread:join(0): ", ok, err)
+for i = 1, 12 do
+  utils.sleep(5)
+  ok, err = thread:join(0)
+  print("thread:join(0)#" .. i .. ": ", ok, err)
+  if ok then break end
+  assert(err == 'timeout')
+end
+
 assert(ok)
 
 end
