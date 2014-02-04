@@ -56,6 +56,7 @@ script:
   - lua$LUA_SFX test_logger.lua
   - lua$LUA_SFX test_pass_cfunction.lua
   - lua$LUA_SFX test_load_llthreads2.lua
+  - lua$LUA_SFX test_alive.lua
 
 notifications:
   email:

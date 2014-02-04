@@ -13,6 +13,7 @@ This is full dropin replacement for [llthreads](https://github.com/Neopallium/lu
 ##Additional
 * thread:join() method support zero timeout to check if thread alive (does not work on Windows with pthreads)
 * thread:join() method support arbitrary timeout on Windows threads
+* thread:alive() method return whether the thread is alive (does not work on Windows with pthreads)
 * set_logger function allow logging errors (crash Lua VM) in current llthread's threads
 * thread:start() has additional parameter which control in which thread child Lua VM will be destroyed
 * allow pass cfunctions to child thread (e.g. to initialize Lua state)
@@ -87,6 +88,23 @@ llthreads.new([[
   local log = require 'myhost.logger'
 
 ]], preload):start(true)
+```
+
+### Wait while thread is alive
+``` Lua 
+local thread = require "llthreads".new[[
+  require "utils".sleep(5)
+  return 1
+]]
+thread:start()
+
+-- we can not use `thread:join(0)` because we can not call it twice
+-- so all returned vaules will be lost
+while thread:alive() do 
+  -- do some work
+end
+
+local ok, ret = thread:join() -- true, 1
 ```
 
 [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/moteus/lua-llthreads2/trend.png)](https://bitdeli.com/free "Bitdeli Badge")

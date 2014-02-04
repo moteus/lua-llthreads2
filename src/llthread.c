@@ -457,6 +457,35 @@ static int llthread_join(llthread_t *this, join_timeout_t timeout) {
   }
 }
 
+static int llthread_alive(llthread_t *this) {
+  llthread_validate(this);
+
+  if(IS(this, JOINED)){
+    return JOIN_OK;
+  } else{
+#ifndef USE_PTHREAD
+  DWORD ret = 0;
+  if(INVALID_THREAD == this->thread) return JOIN_OK;
+  ret = WaitForSingleObject( this->thread, 0 );
+  if( ret == WAIT_OBJECT_0) return JOIN_OK;
+  if( ret == WAIT_TIMEOUT ) return JOIN_ETIMEDOUT;
+  return JOIN_FAIL;
+#else
+  int rc = pthread_kill(this->thread, 0);
+  if(rc == 0){ /* still alive */
+    return JOIN_ETIMEDOUT;
+  }
+
+  if(rc != ESRCH){ 
+    /*@fixme what else it can be ?*/
+    return rc;
+  }
+
+  return JOIN_OK;
+#endif
+  }
+}
+
 static llthread_t *llthread_create(lua_State *L, const char *code, size_t code_len) {
   llthread_t *this        = llthread_new();
   llthread_child_t *child = this->child;
@@ -592,6 +621,45 @@ static int l_llthread_join(lua_State *L) {
 
 }
 
+static int l_llthread_alive(lua_State *L) {
+  llthread_t *this = l_llthread_at(L, 1);
+  llthread_child_t *child = this->child;
+  int rc;
+
+  if(!IS(this, STARTED )) {
+    return fail(L, "Can't join a thread that hasn't be started.");
+  }
+  if( IS(this, DETACHED) && !IS(this, JOINABLE)) {
+    return fail(L, "Can't join a thread that has been detached.");
+  }
+  if( IS(this, JOINED  )) {
+    return fail(L, "Can't join a thread that has already been joined.");
+  }
+
+  /* join the thread. */
+  rc = llthread_alive(this);
+
+  if( rc == JOIN_ETIMEDOUT ){
+    lua_pushboolean(L, 1);
+    return 1;
+  }
+
+  if(rc == JOIN_OK){
+    lua_pushboolean(L, 0);
+    return 1;
+  }
+
+  {
+    char buf[ERROR_LEN];
+    strerror_r(errno, buf, ERROR_LEN);
+
+    /* llthread_cleanup_child(this); */
+
+    return fail(L, buf);
+  }
+
+}
+
 static int l_llthread_new(lua_State *L) {
   size_t lua_code_len; const char *lua_code = luaL_checklstring(L, 1, &lua_code_len);
   llthread_t **this = lutil_newudatap(L, llthread_t*, LLTHREAD_TAG);
@@ -605,6 +673,7 @@ static int l_llthread_new(lua_State *L) {
 static const struct luaL_Reg l_llthread_meth[] = {
   {"start",         l_llthread_start         },
   {"join",          l_llthread_join          },
+  {"alive",         l_llthread_alive         },
   {"__gc",          l_llthread_delete        },
 
   {NULL, NULL}

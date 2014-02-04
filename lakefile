@@ -36,6 +36,7 @@ target('test', install, function()
   run_test('test_register_ffi.lua')
   run_test('test_logger.lua')
   run_test('test_pass_cfunction.lua')
+  run_test('test_alive.lua')
 
   if not test_summary() then
     quit("test fail")
