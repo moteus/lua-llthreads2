@@ -1,0 +1,12 @@
+name = "lua-llthreads2"
+version = "0.1.1"
+
+desc = "A simple Lua wrapper for pthreads & WIN32 threads."
+author = "Alexey Melnichuk"
+license = "MIT/X11"
+url = "https://github.com/moteus/lua-llthreads2"
+maintainer = "Alexey Melnichuk"
+
+depends = {
+  "lua > 5.1"
+}
