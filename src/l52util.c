@@ -11,10 +11,14 @@ int luaL_typerror (lua_State *L, int narg, const char *tname) {
   return luaL_argerror(L, narg, msg);
 }
 
+#ifndef luaL_register
+
 void luaL_register (lua_State *L, const char *libname, const luaL_Reg *l){
   if(libname) lua_newtable(L);
   luaL_setfuncs(L, l, 0);
 }
+
+#endif
 
 #else 
 
