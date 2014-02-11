@@ -44,7 +44,6 @@ script:
   - $TRAVIS_BUILD_DIR/_test/bin/lua test_register_ffi.lua
   - $TRAVIS_BUILD_DIR/_test/bin/lua test_logger.lua
   - $TRAVIS_BUILD_DIR/_test/bin/lua test_pass_cfunction.lua
-  - $TRAVIS_BUILD_DIR/_test/bin/lua test_load_llthreads2.lua
   - $TRAVIS_BUILD_DIR/_test/bin/lua test_alive.lua
 
 
