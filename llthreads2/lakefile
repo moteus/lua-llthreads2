@@ -1,0 +1,45 @@
+PROJECT = 'llthreads'
+
+INITLAKEFILE()
+
+DEFINES = L{DEFINES, 
+  IF(WINDOWS,  'DLL_EXPORT',  '');
+  IF(not MSVC, 'USE_PTHREAD', '');
+}
+
+core = c.shared{PROJECT,
+  base     = 'src',
+  src      = '*.c',
+  needs    = LUA_NEED,
+  defines  = DEFINES,
+  dynamic  = DYNAMIC,
+  strip    = true,
+  libs     = IF(not MSVC, 'pthread');
+}
+
+target('build', core)
+
+install = target('install', {
+  file.group{odir=LIBDIR;  src = core                                 };
+  file.group{odir=TESTDIR; src = J('test', '*');       recurse = true };
+})
+
+target('test', install, function()
+  -- run_test('test_register_llthreads.lua')
+  run_test('test_join_timeout.lua')
+  run_test('test_llthreads.lua')
+  run_test('test_table_copy.lua')
+  run_test('test_threads.lua')
+  run_test('test_join_timeout.lua')
+  run_test('test_join_detach.lua')
+  run_test('test_join_error.lua')
+  run_test('test_register_ffi.lua')
+  run_test('test_logger.lua')
+  run_test('test_pass_cfunction.lua')
+  run_test('test_alive.lua')
+
+  if not test_summary() then
+    quit("test fail")
+  end
+end)
+

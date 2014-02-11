@@ -1,0 +1,42 @@
+language: objective-c
+
+env:
+  global:
+    - PLATFORM=macosx
+    - LUAROCKS_VER=2.1.0
+  matrix:
+    - LUA=lua5.1 LUA_SFX=
+    - LUA=lua5.2 LUA_SFX=
+    - LUA=luajit LUA_SFX=jit
+
+branches:
+  only:
+    - master
+
+before_install:
+  - bash .travis/setup_lua.sh
+
+install:
+  - sudo luarocks install lunitx
+  - sudo luarocks make rockspecs/lua-llthreads2-compat-scm-0.rockspec
+  - sudo luarocks make rockspecs/lua-llthreads2-scm-0.rockspec
+
+script: 
+  - cd test
+  - lua$LUA_SFX test_table_copy.lua
+  - lua$LUA_SFX test_threads.lua
+  - lua$LUA_SFX test_llthreads.lua
+  # - lua$LUA_SFX test_register_llthreads.lua
+  - lua$LUA_SFX test_join_timeout.lua
+  - lua$LUA_SFX test_join_detach.lua
+  - lua$LUA_SFX test_join_error.lua
+  - lua$LUA_SFX test_register_ffi.lua
+  - lua$LUA_SFX test_logger.lua
+  - lua$LUA_SFX test_pass_cfunction.lua
+  - lua$LUA_SFX test_load_llthreads2.lua
+  - lua$LUA_SFX test_alive.lua
+
+notifications:
+  email:
+    on_success: change
+    on_failure: always
