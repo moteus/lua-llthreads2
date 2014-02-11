@@ -1,4 +1,4 @@
-name = "lua-llthreads2"
+name = "lua-llthreads2-compat"
 version = "0.1.1"
 
 desc = "A simple Lua wrapper for pthreads & WIN32 threads."
@@ -10,3 +10,9 @@ maintainer = "Alexey Melnichuk"
 depends = {
   "lua > 5.1"
 }
+
+-- Same modules names
+conflicts = {
+  "lua-llthreads"
+}
+

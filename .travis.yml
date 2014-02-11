@@ -34,7 +34,7 @@ script:
   # - ~/_tools/travis/travis build
   - ~/luadist _test install lua-5.1.5 -binary=false -verbose -DCMAKE_TOOLCHAIN_FILE=$TOOLFILE
   - ~/luadist _test make . -binary=false -verbose -DCMAKE_TOOLCHAIN_FILE=$TOOLFILE
-  - cd _test/share/lua-llthreads2/test
+  - cd _test/share/lua-llthreads2-compat/test
   - $TRAVIS_BUILD_DIR/_test/bin/lua test_table_copy.lua
   - $TRAVIS_BUILD_DIR/_test/bin/lua test_threads.lua
   - $TRAVIS_BUILD_DIR/_test/bin/lua test_llthreads.lua
@@ -56,7 +56,7 @@ after_script:
 # Only watch the master branch
 branches:
   only:
-    - dist-llthreads2
+    - dist-llthreads2-compat
 
 # Notify the LuaDist Dev group if needed
 notifications:
