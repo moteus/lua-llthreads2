@@ -35,17 +35,7 @@ script:
   - ~/luadist _test install lua-5.1.5 -binary=false -verbose -DCMAKE_TOOLCHAIN_FILE=$TOOLFILE
   - ~/luadist _test make . -binary=false -verbose -DCMAKE_TOOLCHAIN_FILE=$TOOLFILE
   - cd _test/share/lua-llthreads2/test
-  - $TRAVIS_BUILD_DIR/_test/bin/lua test_table_copy.lua
-  - $TRAVIS_BUILD_DIR/_test/bin/lua test_threads.lua
-  - $TRAVIS_BUILD_DIR/_test/bin/lua test_llthreads.lua
-  - $TRAVIS_BUILD_DIR/_test/bin/lua test_join_timeout.lua
-  - $TRAVIS_BUILD_DIR/_test/bin/lua test_join_detach.lua
-  - $TRAVIS_BUILD_DIR/_test/bin/lua test_join_error.lua
-  - $TRAVIS_BUILD_DIR/_test/bin/lua test_register_ffi.lua
-  - $TRAVIS_BUILD_DIR/_test/bin/lua test_logger.lua
-  - $TRAVIS_BUILD_DIR/_test/bin/lua test_pass_cfunction.lua
   - $TRAVIS_BUILD_DIR/_test/bin/lua test_load_llthreads2.lua
-  - $TRAVIS_BUILD_DIR/_test/bin/lua test_alive.lua
 
 
 # Execute additional tests or commands
