@@ -23,7 +23,7 @@ This is full dropin replacement for [llthreads](https://github.com/Neopallium/lu
 ##Thread start arguments
 | default | `detached` | `joinable` | join returns | child state closes by | gc calls | detach on |
 |:-------:|:--------:|:--------:|:------------:|:------------------:|:--------:|:---------:|
-|         |   false  |   falas  | `true`       |    child           |  join    | `<NEVER>` |
+|         |   false  |   false  | `true`       |    child           |  join    | `<NEVER>` |
 |   *     |   false  |   true   | Lua values   |    parent          |  join    | `<NEVER>` |
 |   *     |   true   |   false  | raise error  |    child           | `<NONE>` |  start    |
 |         |   true   |   true   | `true`       |    child           | detach   |   gc      |
