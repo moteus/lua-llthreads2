@@ -54,7 +54,8 @@ local thread = require "llthreads".new[[
 
 -- We tell that we start attached thread but child Lua State shuld be close in child thread. 
 -- If `thread` became garbage in main thread then finallizer calls thread:join() 
--- and main thread may hungup.
+-- and main thread may hungup. But because of child state closes in child thread all objects
+-- in this state can be destroyed and we can prevent deadlock.
 thread:start(false, false)
 
 -- We can call join.
