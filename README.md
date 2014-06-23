@@ -119,5 +119,33 @@ end
 local ok, ret = thread:join() -- true, 1
 ```
 
+### Use `ex` module
+``` Lua 
+local Threads = require "llthreads.ex"
+
+local ok, v = Threads.new(function()
+  return 1
+end):start():join()
+assert(v == 1)
+
+local thread = Threads.new({
+  -- this is thread code gets changed arguments
+  function(a, b)
+    assert(1 == a)
+    assert(2 == b)
+    print("Done")
+  end;
+  
+  -- prelude can change thread arguments
+  prelude = function(a, b)
+    assert("1" == a)
+    assert(nil == b)
+    return tonumber(a), 2
+  end;
+}, "1")
+
+thread:start():join()
+```
+
 [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/moteus/lua-llthreads2/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
 
