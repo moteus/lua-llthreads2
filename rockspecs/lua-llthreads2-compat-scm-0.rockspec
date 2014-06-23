@@ -40,6 +40,6 @@ build = {
       sources = { "src/l52util.c", "src/llthread.c" },
       defines = { "LLTHREAD_MODULE_NAME=llthreads"  },
     },
-    ["llthreads2.ex"] = "src/lua/llthreads2/ex.lua",
+    ["llthreads.ex"] = "src/lua/llthreads2/ex.lua",
   }
 }

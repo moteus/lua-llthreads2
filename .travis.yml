@@ -2,12 +2,11 @@ language: objective-c
 
 env:
   global:
-    - PLATFORM=macosx
-    - LUAROCKS_VER=2.1.0
+    - LUAROCKS=2.2.0beta1
   matrix:
-    - LUA=lua5.1 LUA_SFX=
-    - LUA=lua5.2 LUA_SFX=
-    - LUA=luajit LUA_SFX=jit
+    - LUA=lua5.1
+    - LUA=lua5.2
+    - LUA=luajit
 
 branches:
   only:
@@ -24,8 +23,8 @@ install:
 script: 
   - cd test
   - lua$LUA_SFX test_table_copy.lua
-  - lua$LUA_SFX test_threads.lua
-  - lua$LUA_SFX test_llthreads.lua 10
+  - lua$LUA_SFX test_threads.lua 10
+  - lua$LUA_SFX test_llthreads.lua
   # - lua$LUA_SFX test_register_llthreads.lua
   - lua$LUA_SFX test_join_timeout.lua
   - lua$LUA_SFX test_join_detach.lua
