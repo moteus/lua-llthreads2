@@ -129,7 +129,7 @@ end):start():join()
 assert(v == 1)
 
 local thread = Threads.new({
-  -- this is thread code gets changed arguments
+  -- this thread code gets changed arguments
   function(a, b)
     assert(1 == a)
     assert(2 == b)
