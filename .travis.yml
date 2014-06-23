@@ -25,7 +25,7 @@ script:
   - cd test
   - lua$LUA_SFX test_table_copy.lua
   - lua$LUA_SFX test_threads.lua
-  - lua$LUA_SFX test_llthreads.lua
+  - lua$LUA_SFX test_llthreads.lua 10
   # - lua$LUA_SFX test_register_llthreads.lua
   - lua$LUA_SFX test_join_timeout.lua
   - lua$LUA_SFX test_join_detach.lua
@@ -35,6 +35,9 @@ script:
   - lua$LUA_SFX test_pass_cfunction.lua
   - lua$LUA_SFX test_load_llthreads2.lua
   - lua$LUA_SFX test_alive.lua
+  - lua$LUA_SFX test_threads_ex.lua 10
+  - lua$LUA_SFX test_threads_ex_arg.lua
+  - lua$LUA_SFX test_threads_ex_opt.lua
 
 notifications:
   email:
