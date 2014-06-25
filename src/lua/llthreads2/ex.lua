@@ -123,6 +123,24 @@ function thread_mt:alive()
   return self.thread:alive()
 end
 
+--- Check if thread was started.
+-- 
+function thread_mt:started()
+  return self.thread:started()
+end
+
+--- Check if thread is detached.
+-- This function returns valid value only for started thread.
+function thread_mt:detached()
+  return self.thread:detached()
+end
+
+--- Check if thread is joinable.
+-- This function returns valid value only for started thread.
+function thread_mt:joinable()
+  return self.thread:joinable()
+end
+
 end
 -------------------------------------------------------------------------------
 

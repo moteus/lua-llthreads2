@@ -4,8 +4,8 @@
 
 #define LLTHREAD_VERSION_MAJOR 0
 #define LLTHREAD_VERSION_MINOR 1
-#define LLTHREAD_VERSION_PATCH 0
-#define LLTHREAD_VERSION_COMMENT ""
+#define LLTHREAD_VERSION_PATCH 2
+#define LLTHREAD_VERSION_COMMENT "dev"
 
 #ifndef USE_PTHREAD
 #  include <windows.h>
@@ -660,6 +660,24 @@ static int l_llthread_alive(lua_State *L) {
 
 }
 
+static int l_llthread_started(lua_State *L) {
+  llthread_t *this = l_llthread_at(L, 1);
+  lua_pushboolean(L, IS(this, STARTED)?1:0);
+  return 1;
+}
+
+static int l_llthread_detached(lua_State *L) {
+  llthread_t *this = l_llthread_at(L, 1);
+  lua_pushboolean(L, IS(this, DETACHED)?1:0);
+  return 1;
+}
+
+static int l_llthread_joinable(lua_State *L) {
+  llthread_t *this = l_llthread_at(L, 1);
+  lua_pushboolean(L, IS(this, JOINABLE)?1:0);
+  return 1;
+}
+
 static int l_llthread_new(lua_State *L) {
   size_t lua_code_len; const char *lua_code = luaL_checklstring(L, 1, &lua_code_len);
   llthread_t **this = lutil_newudatap(L, llthread_t*, LLTHREAD_TAG);
@@ -674,6 +692,9 @@ static const struct luaL_Reg l_llthread_meth[] = {
   {"start",         l_llthread_start         },
   {"join",          l_llthread_join          },
   {"alive",         l_llthread_alive         },
+  {"started",       l_llthread_started       },
+  {"detached",      l_llthread_detached      },
+  {"joinable",      l_llthread_joinable      },
   {"__gc",          l_llthread_delete        },
 
   {NULL, NULL}

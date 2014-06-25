@@ -37,6 +37,7 @@ script:
   - lua$LUA_SFX test_threads_ex.lua 10
   - lua$LUA_SFX test_threads_ex_arg.lua
   - lua$LUA_SFX test_threads_ex_opt.lua
+  - lua$LUA_SFX test_threads_attr.lua
 
 notifications:
   email:
