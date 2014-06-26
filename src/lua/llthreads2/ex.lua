@@ -182,8 +182,6 @@ threads.new = function (code, ...)
   return new_thread(LUA_INIT, nil, code, ...)
 end
 
-threads.thread_mt = thread_mt
-
 end
 -------------------------------------------------------------------------------
 
