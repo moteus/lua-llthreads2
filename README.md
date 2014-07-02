@@ -21,12 +21,12 @@ This is full dropin replacement for [llthreads](https://github.com/Neopallium/lu
 * allow pass cfunctions to child thread (e.g. to initialize Lua state)
 
 ##Thread start arguments
-| default | `detached` | `joinable` | join returns | child state closes by | gc calls | detach on |
-|:-------:|:----------:|:----------:|:------------:|:---------------------:|:--------:|:---------:|
-|         |    false   |    false   | `true`       |         child         |  join    | `<NEVER>` |
-|    *    |    false   |    true    | Lua values   |         parent        |  join    | `<NEVER>` |
-|    *    |    true    |    false   | raise error  |         child         | `<NONE>` |   start   |
-|         |    true    |    true    | `true`       |         child         | detach   |    gc     |
+| `detached` | `joinable` | join returns | child state closes by | gc calls | detach on |
+|:----------:|:----------:|:------------:|:---------------------:|:--------:|:---------:|
+|   false    |  false     | `true`       |         child         |  join    | `<NEVER>` |
+|   false(*) |  true(*)   | Lua values   |         parent        |  join    | `<NEVER>` |
+|   true     |  false(*)  | raise error  |         child         | `<NONE>` |   start   |
+|   true     |  true      | `true`       |         child         | detach   |    gc     |
 
 
 ##Usage
