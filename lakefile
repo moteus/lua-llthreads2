@@ -27,6 +27,7 @@ install = target('install', {
 
 target('test', install, function()
   -- run_test('test_register_llthreads.lua')
+  run_test('test_version.lua')
   run_test('test_join_timeout.lua')
   run_test('test_llthreads.lua')
   run_test('test_table_copy.lua')

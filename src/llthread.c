@@ -4,8 +4,8 @@
 
 #define LLTHREAD_VERSION_MAJOR 0
 #define LLTHREAD_VERSION_MINOR 1
-#define LLTHREAD_VERSION_PATCH 3
-// #define LLTHREAD_VERSION_COMMENT "dev"
+#define LLTHREAD_VERSION_PATCH 4
+#define LLTHREAD_VERSION_COMMENT "dev"
 
 #ifndef USE_PTHREAD
 #  include <windows.h>
@@ -705,9 +705,9 @@ static const struct luaL_Reg l_llthread_meth[] = {
 //{ version
 
 static int l_llthread_version(lua_State *L){
-  lua_pushnumber(L, LLTHREAD_VERSION_MAJOR);
-  lua_pushnumber(L, LLTHREAD_VERSION_MINOR);
-  lua_pushnumber(L, LLTHREAD_VERSION_PATCH);
+  lua_pushinteger(L, LLTHREAD_VERSION_MAJOR);
+  lua_pushinteger(L, LLTHREAD_VERSION_MINOR);
+  lua_pushinteger(L, LLTHREAD_VERSION_PATCH);
 #ifdef LLTHREAD_VERSION_COMMENT
   if(LLTHREAD_VERSION_COMMENT[0]){
     lua_pushliteral(L, LLTHREAD_VERSION_COMMENT);
@@ -718,11 +718,11 @@ static int l_llthread_version(lua_State *L){
 }
 
 static int l_llthread_push_version(lua_State *L){
-  lua_pushnumber(L, LLTHREAD_VERSION_MAJOR);
+  lua_pushinteger(L, LLTHREAD_VERSION_MAJOR);
   lua_pushliteral(L, ".");
-  lua_pushnumber(L, LLTHREAD_VERSION_MINOR);
+  lua_pushinteger(L, LLTHREAD_VERSION_MINOR);
   lua_pushliteral(L, ".");
-  lua_pushnumber(L, LLTHREAD_VERSION_PATCH);
+  lua_pushinteger(L, LLTHREAD_VERSION_PATCH);
 #ifdef LLTHREAD_VERSION_COMMENT
   if(LLTHREAD_VERSION_COMMENT[0]){
     lua_pushliteral(L, "-"LLTHREAD_VERSION_COMMENT);

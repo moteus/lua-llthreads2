@@ -22,6 +22,7 @@ install:
 
 script: 
   - cd test
+  - lua test_version.lua
   - lua test_table_copy.lua
   - lua test_threads.lua 10
   - lua test_llthreads.lua
