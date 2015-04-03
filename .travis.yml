@@ -37,6 +37,7 @@ script:
   - lua test_threads_ex.lua 10
   - lua test_threads_ex_arg.lua
   - lua test_threads_ex_opt.lua
+  - lua test_threads_ex_opt_2.lua
   - lua test_threads_attr.lua
   # - lua$LUA_SFX test_register_llthreads.lua
 
