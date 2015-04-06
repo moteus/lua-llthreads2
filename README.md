@@ -35,7 +35,7 @@ This is full dropin replacement for [llthreads](https://github.com/Neopallium/lu
 In this example I use [lua-log](https://github.com/moteus/lua-log) library.
 ``` Lua
 -- This is child thread.
-local llthreads = require "llthreads"
+local llthreads = require "llthreads2"
 -- Send logs using ZMQ
 local LOG = require"log".new(
   require "log.writer.net.zmq".new("tcp://127.0.0.1:5555")
@@ -48,7 +48,7 @@ error("SOME ERROR")
 ### Start attached thread collectd in child thread
 ``` Lua 
 -- This is main thread.
-local thread = require "llthreads".new[[
+local thread = require "llthreads2".new[[
   require "utils".sleep(5)
 ]]
 
@@ -67,7 +67,7 @@ thread:join()
 ### Start detached joinable thread
 ``` Lua 
 -- This is main thread.
-local thread = require "llthreads".new[[
+local thread = require "llthreads2".new[[
   require "utils".sleep(5)
 ]]
 
@@ -104,7 +104,7 @@ llthreads.new([[
 
 ### Wait while thread is alive
 ``` Lua 
-local thread = require "llthreads".new[[
+local thread = require "llthreads2".new[[
   require "utils".sleep(5)
   return 1
 ]]
@@ -121,7 +121,7 @@ local ok, ret = thread:join() -- true, 1
 
 ### Use `ex` module
 ``` Lua 
-local Threads = require "llthreads.ex"
+local Threads = require "llthreads2.ex"
 
 local ok, v = Threads.new(function()
   return 1
