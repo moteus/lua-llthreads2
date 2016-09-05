@@ -1,24 +1,36 @@
-language: c
+sudo: false
 
-env:
-  global:
-    - LUAROCKS=2.2.0
-  matrix:
-    - LUA=lua5.1
-    - LUA=lua5.2
-    - LUA=lua5.3
-    - LUA=luajit
+matrix:
+  include:
+    - compiler: ": Lua51"
+      env: LUA="lua 5.1"
+    - compiler: ": Lua52"
+      env: LUA="lua 5.2"
+    - compiler: ": Lua53"
+      env: LUA="lua 5.3"
+    - compiler: ": LuaJIT20"
+      env: LUA="luajit 2.0"
+    - compiler: ": LuaJIT21"
+      env: LUA="luajit 2.1"
+
+cache:
+  directories:
+    - here
+    - $HOME/.cache/pip
 
 branches:
   only:
     - master
 
 before_install:
-  - bash .travis/setup_lua.sh
+  - export CC=gcc
+  - pip install --user hererocks
+  - hererocks here -r^ --$LUA;
+  - export PATH=$PATH:$PWD/here/bin
 
 install:
-  - sudo luarocks make rockspecs/lua-llthreads2-compat-scm-0.rockspec
-  - sudo luarocks make rockspecs/lua-llthreads2-scm-0.rockspec
+  - luarocks make rockspecs/lua-llthreads2-compat-scm-0.rockspec
+  - luarocks make rockspecs/lua-llthreads2-scm-0.rockspec
 
 script: 
   - cd test
@@ -39,6 +51,7 @@ script:
   - lua test_threads_ex_opt.lua
   - lua test_threads_ex_opt_2.lua
   - lua test_threads_attr.lua
+  - lua test_integer.lua
   # - lua$LUA_SFX test_register_llthreads.lua
 
 notifications:
