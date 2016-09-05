@@ -77,6 +77,11 @@ static int llthread_copy_value(llthread_copy_state *state, int depth, int idx) {
     lua_pushnil(state->to_L);
     break;
   case LUA_TNUMBER:
+#if LUA_VERSION_NUM >= 503
+    if(lua_isinteger(state->from_L, idx))
+      lua_pushinteger(state->to_L, lua_tointeger(state->from_L, idx));
+    else
+#endif
     lua_pushnumber(state->to_L, lua_tonumber(state->from_L, idx));
     break;
   case LUA_TBOOLEAN:
