@@ -60,7 +60,7 @@ thread:start(false, false)
 
 -- We can call join.
 -- Because of Lua state destroys in child thread we can not get 
--- returned Lua vaules so we just returns `true`.
+-- returned Lua values so we just returns `true`.
 thread:join()
 ```
 
@@ -78,7 +78,7 @@ thread:start(true, true)
 
 -- We can call join.
 -- Because of Lua state destroys in child thread we can not get 
--- returned Lua vaules so we just returns `true`.
+-- returned Lua values so we just returns `true`.
 thread:join()
 ```
 
@@ -111,7 +111,7 @@ local thread = require "llthreads2".new[[
 thread:start()
 
 -- we can not use `thread:join(0)` because we can not call it twice
--- so all returned vaules will be lost
+-- so all returned values will be lost
 while thread:alive() do 
   -- do some work
 end
