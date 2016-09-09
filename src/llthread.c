@@ -5,7 +5,7 @@
 #define LLTHREAD_VERSION_MAJOR 0
 #define LLTHREAD_VERSION_MINOR 1
 #define LLTHREAD_VERSION_PATCH 4
-#define LLTHREAD_VERSION_COMMENT "dev"
+// #define LLTHREAD_VERSION_COMMENT "dev"
 
 #ifndef USE_PTHREAD
 #  include <windows.h>

@@ -1,5 +1,5 @@
 name = "lua-llthreads2"
-version = "0.1.3"
+version = "0.1.4"
 
 desc = "A simple Lua wrapper for pthreads & WIN32 threads."
 author = "Alexey Melnichuk"
