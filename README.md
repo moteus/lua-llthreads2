@@ -1,8 +1,8 @@
 lua-llthreads2
 ==============
+[![Licence](http://img.shields.io/badge/Licence-MIT-brightgreen.svg)](LICENSE)
 [![Build Status](https://travis-ci.org/moteus/lua-llthreads2.png?branch=master)](https://travis-ci.org/moteus/lua-llthreads2)
-[![Build Status](https://buildhive.cloudbees.com/job/moteus/job/lua-llthreads2/badge/icon)](https://buildhive.cloudbees.com/job/moteus/job/lua-llthreads2/)
-[![Build Status](https://moteus.ci.cloudbees.com/job/lua-llthreads2/badge/icon)](https://moteus.ci.cloudbees.com/job/lua-llthreads2/)
+[![Build status](https://ci.appveyor.com/api/projects/status/st2uldkbqmpgfl2w?svg=true)](https://ci.appveyor.com/project/moteus/lua-llthreads2)
 
 This is full dropin replacement for [llthreads](https://github.com/Neopallium/lua-llthreads) library.
 
