@@ -12,6 +12,9 @@
 #  include <process.h>
 #else
 #  include <pthread.h>
+#  ifndef _WIN32
+#    include <signal.h>
+#  endif
 #endif
 
 #include <stdlib.h>

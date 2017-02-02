@@ -2,16 +2,24 @@ sudo: false
 
 matrix:
   include:
+    - compiler: ": Lua51-osx"
+      env: LUA="lua 5.1"
+      os: osx
     - compiler: ": Lua51"
       env: LUA="lua 5.1"
+      os: linux
     - compiler: ": Lua52"
       env: LUA="lua 5.2"
+      os: linux
     - compiler: ": Lua53"
       env: LUA="lua 5.3"
+      os: linux
     - compiler: ": LuaJIT20"
       env: LUA="luajit 2.0"
+      os: linux
     - compiler: ": LuaJIT21"
       env: LUA="luajit 2.1"
+      os: linux
 
 cache:
   directories:
@@ -24,6 +32,8 @@ branches:
 
 before_install:
   - export CC=gcc
+  - gcc --version
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export PATH=$PATH:~/Library/Python/2.7/bin/; fi
   - pip install --user hererocks
   - hererocks here -r^ --$LUA;
   - export PATH=$PATH:$PWD/here/bin
@@ -52,7 +62,7 @@ script:
   - lua test_threads_ex_opt_2.lua
   - lua test_threads_attr.lua
   - lua test_integer.lua
-  # - lua$LUA_SFX test_register_llthreads.lua
+  # - lua test_register_llthreads.lua
 
 notifications:
   email:
