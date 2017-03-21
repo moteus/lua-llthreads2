@@ -384,6 +384,9 @@ static int llthread_start(llthread_t *this, int start_detached, int joinable) {
 
 #ifndef USE_PTHREAD
   this->thread = (HANDLE)_beginthreadex(NULL, 0, llthread_child_thread_run, child, 0, NULL);
+  if(0 == this->thread){
+    this->thread = INVALID_THREAD;
+  }
   if(INVALID_THREAD == this->thread){
     rc = -1;
   }
