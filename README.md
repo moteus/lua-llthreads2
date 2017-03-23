@@ -6,13 +6,13 @@ lua-llthreads2
 
 This is full dropin replacement for [llthreads](https://github.com/Neopallium/lua-llthreads) library.
 
-##Incompatibility list with origin llthreads library
+## Incompatibility list with origin llthreads library
 * does not support Lua 5.0
 * does not support ffi interface (use Lua C API for LuaJIT)
 * returns nil instead of false on error
 * start method returns self instead of true on success
 
-##Additional
+## Additional
 * thread:join() method support zero timeout to check if thread alive (does not work on Windows with pthreads)
 * thread:join() method support arbitrary timeout on Windows threads
 * thread:alive() method return whether the thread is alive (does not work on Windows with pthreads)
@@ -20,16 +20,16 @@ This is full dropin replacement for [llthreads](https://github.com/Neopallium/lu
 * thread:start() has additional parameter which control in which thread child Lua VM will be destroyed
 * allow pass cfunctions to child thread (e.g. to initialize Lua state)
 
-##Thread start arguments
+## Thread start arguments
 | `detached` | `joinable` | join returns | child state closes by | gc calls | detach on |
 |:----------:|:----------:|:------------:|:---------------------:|:--------:|:---------:|
 |   false    |  false     | `true`       |         child         |  join    | `<NEVER>` |
-|   false(*) |  true(*)   | Lua values   |         parent        |  join    | `<NEVER>` |
-|   true     |  false(*)  | raise error  |         child         | `<NONE>` |   start   |
+|   false(\*)|  true(\*)  | Lua values   |         parent        |  join \* | `<NEVER>` |
+|   true     |  false(\*) | raise error  |         child         | `<NONE>` |   start   |
 |   true     |  true      | `true`       |         child         | detach   |    gc     |
 
 
-##Usage
+## Usage
 
 ### Use custom logger
 In this example I use [lua-log](https://github.com/moteus/lua-log) library.
