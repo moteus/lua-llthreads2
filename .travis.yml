@@ -1,24 +1,20 @@
+language: c
+
 sudo: false
 
 matrix:
   include:
-    - compiler: ": Lua51-osx"
-      env: LUA="lua 5.1"
+    - env: LUA="lua 5.1"
       os: osx
-    - compiler: ": Lua51"
-      env: LUA="lua 5.1"
+    - env: LUA="lua 5.1"
       os: linux
-    - compiler: ": Lua52"
-      env: LUA="lua 5.2"
+    - env: LUA="lua 5.2"
       os: linux
-    - compiler: ": Lua53"
-      env: LUA="lua 5.3"
+    - env: LUA="lua 5.3"
       os: linux
-    - compiler: ": LuaJIT20"
-      env: LUA="luajit 2.0"
+    - env: LUA="luajit 2.0"
       os: linux
-    - compiler: ": LuaJIT21"
-      env: LUA="luajit 2.1"
+    - env: LUA="luajit 2.1"
       os: linux
 
 cache:
@@ -29,14 +25,13 @@ cache:
 branches:
   only:
     - master
+    - curl_mime
 
 before_install:
-  - export CC=gcc
-  - gcc --version
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export PATH=$PATH:~/Library/Python/2.7/bin/; fi
-  - pip install --user hererocks
-  - hererocks here -r^ --$LUA;
-  - export PATH=$PATH:$PWD/here/bin
+  - pip2 install --user hererocks
+  - hererocks here -r^ --$LUA
+  - source here/bin/activate
 
 install:
   - luarocks make rockspecs/lua-llthreads2-compat-scm-0.rockspec
