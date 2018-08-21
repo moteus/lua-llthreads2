@@ -694,6 +694,32 @@ static int l_llthread_new(lua_State *L) {
   return 1;
 }
 
+static void llthread_interrupt1(lua_State *L, lua_Debug *ar) {
+  (void)ar;  /* unused arg. */
+  lua_sethook(L, NULL, 0, 0);  /* reset hook */
+  luaL_error(L, "interrupted!");
+}
+static void llthread_interrupt2(lua_State *L, lua_Debug *ar) {
+  (void)ar;  /* unused arg. */
+  luaL_error(L, "interrupted!");
+}
+
+static int l_llthread_interrupt(lua_State *L) {
+  llthread_t *this = l_llthread_at(L, 1);
+  llthread_child_t *child = this->child;
+  lua_Hook hook = llthread_interrupt1;
+  if (!lua_isnoneornil(L, 2))
+    hook = lua_toboolean(L, 2) ? llthread_interrupt2 : NULL;
+  if (child) {
+    if (hook)
+      lua_sethook(child->L, hook, LUA_MASKCALL|LUA_MASKRET|LUA_MASKCOUNT, 1);
+    else
+      lua_sethook(child->L, NULL, 0, 0);  /* reset hook */
+  }
+  return 0;
+}
+
+
 static const struct luaL_Reg l_llthread_meth[] = {
   {"start",         l_llthread_start         },
   {"join",          l_llthread_join          },
@@ -701,6 +727,7 @@ static const struct luaL_Reg l_llthread_meth[] = {
   {"started",       l_llthread_started       },
   {"detached",      l_llthread_detached      },
   {"joinable",      l_llthread_joinable      },
+  {"interrupt",     l_llthread_interrupt     },
   {"__gc",          l_llthread_delete        },
 
   {NULL, NULL}
