@@ -44,6 +44,7 @@ target('test', install, function()
   run_test('test_threads_ex_opt.lua')
   run_test('test_threads_ex_opt_2.lua')
   run_test('test_threads_attr.lua')
+  run_test('test_interrupt.lua')
 
 
   if not test_summary() then
