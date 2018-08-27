@@ -141,6 +141,15 @@ function thread_mt:joinable()
   return self.thread:joinable()
 end
 
+--- Interrupt thread
+-- The thread is interrupted by installing a debug hook that
+-- creates an error.
+-- @tparam ?boolean if not given, interrupt only once,
+--         otherwise this arg sets or unsets permanent interrupt.
+function thread_mt:interrupt(arg)
+  return self.thread:interrupt(arg)
+end
+
 end
 -------------------------------------------------------------------------------
 

@@ -72,6 +72,7 @@ test_script:
   - lua test_threads_ex_opt_2.lua
   - lua test_threads_attr.lua
   - lua test_integer.lua
+  - lua test_interrupt.lua
   # - lua test_register_llthreads.lua
 
 after_test:

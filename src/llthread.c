@@ -98,11 +98,17 @@ typedef pthread_t os_thread_t;
 
 #define LLTHREAD_OPEN_NAME LLTHREAD_OPEN_NAME_IMPL(LLTHREAD_MODULE_NAME)
 
+#define LLTHREAD_STRINGIFY(x) #x
+#define LLTHREAD_TOSTRING(x) LLTHREAD_STRINGIFY(x)
+#define LLTHREAD_MODULE_NAME_STRING LLTHREAD_TOSTRING(LLTHREAD_MODULE_NAME)
+
+
 LLTHREADS_EXPORT_API int LLTHREAD_OPEN_NAME(lua_State *L);
 
 #define LLTHREAD_NAME "LLThread"
 static const char *LLTHREAD_TAG = LLTHREAD_NAME;
 static const char *LLTHREAD_LOGGER_HOLDER = LLTHREAD_NAME " logger holder";
+static const char* LLTHREAD_INTERRUPTED_ERROR = LLTHREAD_MODULE_NAME_STRING ": thread was interrupted";
 
 typedef struct llthread_child_t {
   lua_State  *L;
@@ -694,6 +700,32 @@ static int l_llthread_new(lua_State *L) {
   return 1;
 }
 
+static void llthread_interrupt1(lua_State *L, lua_Debug *ar) {
+  (void)ar;  /* unused arg. */
+  lua_sethook(L, NULL, 0, 0);  /* reset hook */
+  luaL_error(L, LLTHREAD_INTERRUPTED_ERROR);
+}
+static void llthread_interrupt2(lua_State *L, lua_Debug *ar) {
+  (void)ar;  /* unused arg. */
+  luaL_error(L, LLTHREAD_INTERRUPTED_ERROR);
+}
+
+static int l_llthread_interrupt(lua_State *L) {
+  llthread_t *this = l_llthread_at(L, 1);
+  llthread_child_t *child = this->child;
+  lua_Hook hook = llthread_interrupt1;
+  if (!lua_isnoneornil(L, 2))
+    hook = lua_toboolean(L, 2) ? llthread_interrupt2 : NULL;
+  if (child) {
+    if (hook)
+      lua_sethook(child->L, hook, LUA_MASKCALL|LUA_MASKRET|LUA_MASKCOUNT, 1);
+    else
+      lua_sethook(child->L, NULL, 0, 0);  /* reset hook */
+  }
+  return 0;
+}
+
+
 static const struct luaL_Reg l_llthread_meth[] = {
   {"start",         l_llthread_start         },
   {"join",          l_llthread_join          },
@@ -701,6 +733,7 @@ static const struct luaL_Reg l_llthread_meth[] = {
   {"started",       l_llthread_started       },
   {"detached",      l_llthread_detached      },
   {"joinable",      l_llthread_joinable      },
+  {"interrupt",     l_llthread_interrupt     },
   {"__gc",          l_llthread_delete        },
 
   {NULL, NULL}
@@ -769,5 +802,9 @@ LLTHREADS_EXPORT_API int LLTHREAD_OPEN_NAME(lua_State *L) {
   l_llthread_push_version(L);
   lua_rawset(L, -3);
 
+  lua_pushliteral(L, "interrupted_error");
+  lua_pushstring(L, LLTHREAD_INTERRUPTED_ERROR);
+  lua_rawset(L, -3);
+  
   return 1;
 }
