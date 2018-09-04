@@ -135,7 +135,8 @@ void llthread_log(lua_State *L, const char *hdr, const char *msg){
   if(lua_isnil(L, -1)){
     lua_pop(L, 1);
     fputs(hdr,  stderr);
-    fputs(msg,  stderr);
+    if (msg) fputs(msg,  stderr);
+    else     fputs("(no error message)",  stderr);
     fputc('\n', stderr);
     fflush(stderr);
     return;
