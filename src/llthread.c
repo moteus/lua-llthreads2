@@ -132,11 +132,12 @@ static int fail(lua_State *L, const char *msg){
 void llthread_log(lua_State *L, const char *hdr, const char *msg){
   int top = lua_gettop(L);
   lua_rawgetp(L, LUA_REGISTRYINDEX, LLTHREAD_LOGGER_HOLDER);
+  if (!msg) 
+    msg = "(no error message)";
   if(lua_isnil(L, -1)){
     lua_pop(L, 1);
     fputs(hdr,  stderr);
-    if (msg) fputs(msg,  stderr);
-    else     fputs("(no error message)",  stderr);
+    fputs(msg,  stderr);
     fputc('\n', stderr);
     fflush(stderr);
     return;
