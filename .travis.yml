@@ -58,6 +58,7 @@ script:
   - lua test_threads_attr.lua
   - lua test_integer.lua
   - lua test_interrupt.lua
+  - lua test_error.lua
   # - lua test_register_llthreads.lua
 
 notifications:
