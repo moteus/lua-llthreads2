@@ -22,6 +22,7 @@ void luaL_register (lua_State *L, const char *libname, const luaL_Reg *l){
 
 #else 
 
+#ifndef LUA_LJDIR
 void luaL_setfuncs (lua_State *L, const luaL_Reg *l, int nup){
   luaL_checkstack(L, nup, "too many upvalues");
   for (; l->name != NULL; l++) {  /* fill the table with given functions */
@@ -33,6 +34,7 @@ void luaL_setfuncs (lua_State *L, const luaL_Reg *l, int nup){
   }
   lua_pop(L, nup);  /* remove upvalues */
 }
+#endif
 
 void lua_rawgetp(lua_State *L, int index, const void *p){
   index = lua_absindex(L, index);
