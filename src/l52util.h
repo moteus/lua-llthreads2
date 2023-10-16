@@ -48,7 +48,9 @@ void luaL_register (lua_State *L, const char *libname, const luaL_Reg *l);
 
 void  lua_rawgetp   (lua_State *L, int index, const void *p);
 void  lua_rawsetp   (lua_State *L, int index, const void *p);
+#ifndef LUA_LJDIR
 void  luaL_setfuncs  (lua_State *L, const luaL_Reg *l, int nup);
+#endif
 
 void lutil_require(lua_State *L, const char* name, lua_CFunction fn, int glb);
 
